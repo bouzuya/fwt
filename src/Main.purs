@@ -1,6 +1,6 @@
-module Main where
+module Main (main) where
 
-import Prelude
+import Prelude (Unit)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 
