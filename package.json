@@ -1,0 +1,24 @@
+{
+  "name": "fwt",
+  "description": "face with time",
+  "version": "0.0.0",
+  "author": {
+    "email": "m@bouzuya.net",
+    "name": "bouzuya",
+    "url": "https://bouzuya.net/"
+  },
+  "bugs": {
+    "url": "https://github.com/bouzuya/fwt/issues"
+  },
+  "homepage": "https://github.com/bouzuya/fwt#readme",
+  "keywords": [],
+  "license": "MIT",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bouzuya/fwt.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
