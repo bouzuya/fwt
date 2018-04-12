@@ -31,7 +31,9 @@
     "clean": "rimraf .pulp-cache output",
     "prepare": "npm-run-all -s bower:install clean build",
     "pulp:build": "pulp build",
+    "pulp:repl": "pulp repl",
     "pulp:test": "pulp test",
+    "repl": "npm run pulp:repl",
     "test": "npm run pulp:test"
   }
 }
