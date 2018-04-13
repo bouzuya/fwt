@@ -8,16 +8,18 @@ import Data.FaceWithTime (fwt, url)
 import Data.Function (($))
 import Data.Functor ((<$>))
 import Data.Show (show)
-import Data.UUID (GENUUID, genUUID)
-import Data.User (user)
+import Data.UUID (GENUUID, UUID, genUUID)
+import Data.User (User, user)
 import Data.UserId (userId)
 import Prelude (Unit, bind, discard)
 
+newUser :: String -> UUID -> User
+newUser name uuid = user { id: userId uuid, name }
+
 main :: forall e. Eff (console :: CONSOLE, now :: NOW, uuid :: GENUUID | e) Unit
 main = do
-  userId' <- userId <$> genUUID
-  let user' = user { id: userId', name: "bouzuya" }
-  log $ show user'
+  user' <- newUser "bouzuya" <$> genUUID
+  log $ show $ user'
   instant' <- now
   let fwt' = do
         face <- url "https://bouzuya.net/"
