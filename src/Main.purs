@@ -2,9 +2,11 @@ module Main (main) where
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
+import Data.DateTime.Instant (instant)
 import Data.Functor ((<$>))
 import Data.Semigroup ((<>))
 import Data.Show (class Show)
+import Data.Time.Duration (Milliseconds (Milliseconds))
 import Data.UUID (GENUUID, UUID, genUUID)
 import Prelude (Unit, bind, discard, show, ($))
 
@@ -26,4 +28,5 @@ main = do
   log $ show user
   let url = URL "https://bouzuya.net/"
   log $ show url
+  log $ show $ instant $ Milliseconds 1523616518.0
   log "Hello sailor!"
