@@ -6,12 +6,12 @@ import Data.DateTime.Instant (Instant, instant, toDateTime)
 import Data.Formatter.DateTime (FormatterCommand(..), format)
 import Data.Functor ((<$>))
 import Data.List (fromFoldable)
-import Data.Maybe (Maybe(..), fromJust)
+import Data.Maybe (Maybe(..), maybe)
 import Data.Semigroup ((<>))
 import Data.Show (class Show)
 import Data.Time.Duration (Milliseconds(Milliseconds)) as DTD
 import Data.UUID (GENUUID, UUID, genUUID)
-import Prelude (Unit, bind, discard, pure, show, ($))
+import Prelude (Unit, bind, discard, show, ($))
 
 newtype UserId = UserId UUID
 derive newtype instance showUserId :: Show UserId
@@ -23,6 +23,14 @@ instance showUser :: Show User where
 
 newtype URL = URL String
 derive newtype instance showURL :: Show URL
+
+newtype FaceWithTime = FaceWithTime { face :: URL, time :: Instant }
+instance showFaceWithTime :: Show FaceWithTime where
+  show (FaceWithTime { face, time }) =
+    "FaceWithTime" <>
+    " { face: \"" <> show face <> "\"" <>
+    " , time: \"" <> toIso8601 time <> "\"" <>
+    " }"
 
 toIso8601 :: Instant -> String
 toIso8601 i = format formatter $ toDateTime i
@@ -49,10 +57,8 @@ main = do
   userId <- UserId <$> genUUID
   let user = User { id: userId, name: "bouzuya" }
   log $ show user
-  let url = URL "https://bouzuya.net/"
-  log $ show url
-  let instant' = instant $ DTD.Milliseconds 1523616518300.0
-  log $ case instant' of
-    Nothing -> ""
-    Just instant'' -> toIso8601 instant''
+  let face = URL "https://bouzuya.net/"
+  let now = instant $ DTD.Milliseconds 1523616518300.0
+  let fwt = maybe Nothing (\time -> Just $ FaceWithTime { face, time }) now
+  log $ show fwt
   log "Hello sailor!"
