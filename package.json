@@ -36,8 +36,10 @@
     "prepare": "npm-run-all -s bower:install clean build",
     "pulp:build": "pulp build",
     "pulp:repl": "pulp repl",
+    "pulp:run": "pulp run",
     "pulp:test": "pulp test",
     "repl": "npm run pulp:repl",
+    "start": "npm run pulp:run",
     "test": "npm run pulp:test"
   }
 }
