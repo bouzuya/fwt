@@ -7,11 +7,12 @@
     "output"
   ],
   "dependencies": {
-    "purescript-prelude": "^3.2.0",
-    "purescript-eff": "^3.2.1",
     "purescript-console": "^3.0.0",
-    "purescript-uuid": "^4.0.0",
-    "purescript-maybe": "^3.1.0"
+    "purescript-datetime": "^3.4.1",
+    "purescript-eff": "^3.2.1",
+    "purescript-maybe": "^3.1.0",
+    "purescript-prelude": "^3.2.0",
+    "purescript-uuid": "^4.0.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0"
