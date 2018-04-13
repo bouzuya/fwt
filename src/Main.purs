@@ -16,9 +16,14 @@ instance showUser :: Show User where
   show (User { id, name }) =
     "User { id: \"" <> show id <> "\", name: \"" <> name <> "\" }"
 
+newtype URL = URL String
+derive newtype instance showURL :: Show URL
+
 main :: forall e. Eff (console :: CONSOLE, uuid :: GENUUID | e) Unit
 main = do
   userId <- UserId <$> genUUID
   let user = User { id: userId, name: "bouzuya" }
   log $ show user
+  let url = URL "https://bouzuya.net/"
+  log $ show url
   log "Hello sailor!"
