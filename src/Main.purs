@@ -11,6 +11,8 @@ import Data.Functor ((<$>))
 import Data.Show (show)
 import Data.UUID (GENUUID, UUID, genUUID)
 import Data.User (User, user)
+import Routing (match)
+import Route (myRoute)
 import Data.UserId (userId)
 import Hyper.Node.Server (defaultOptionsWithLogging, runServer)
 import Hyper.Response (closeHeaders, respond, writeStatus)
@@ -37,6 +39,9 @@ main = do
         time <- pure $ instant'
         pure $ fwt { face, time }
   log $ show fwt'
+  log $ show $ match myRoute "/"
+  log $ show $ match myRoute "/users"
+  log $ show $ match myRoute "/users/abc"
   log "Hello sailor!"
   let app = writeStatus statusOK
             :*> closeHeaders
