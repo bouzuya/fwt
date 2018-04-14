@@ -8,27 +8,27 @@ import Data.Show (class Show)
 import Routing.Match (Match, end, lit, root, str)
 
 data MyRoute
-  = GetIndex
-  | GetUsers
-  | UpdateUser String
+  = Index
+  | Users
+  | User String
 
 instance showMyRoute :: Show MyRoute where
-  show GetIndex = "GetIndex"
-  show GetUsers = "GetUsers"
-  show (UpdateUser id) = "UpdateUser " <> id
+  show Index = "Index"
+  show Users = "Users"
+  show (User id) = "User " <> id
 
-getIndex :: Match MyRoute
-getIndex = GetIndex <$ (lit "" <* end)
+index :: Match MyRoute
+index = Index <$ (lit "" <* end)
 
-getUsers :: Match MyRoute
-getUsers = GetUsers <$ (root *> lit "users" <* end)
+users :: Match MyRoute
+users = Users <$ (root *> lit "users" <* end)
 
-updateUser :: Match MyRoute
-updateUser = UpdateUser <$> (root *> lit "users" *> str <* end)
+user :: Match MyRoute
+user = User <$> (root *> lit "users" *> str <* end)
 
 myRoute :: Match MyRoute
 myRoute = oneOf
-  [ getIndex
-  , getUsers
-  , updateUser
+  [ index
+  , users
+  , user
   ]
