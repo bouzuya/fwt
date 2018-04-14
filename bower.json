@@ -15,9 +15,14 @@
     "purescript-maybe": "^3.1.0",
     "purescript-now": "^3.0.0",
     "purescript-prelude": "^3.2.0",
+    "purescript-routing": "^7.1.0",
     "purescript-uuid": "^4.0.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0"
+  },
+  "resolutions": {
+    "purescript-aff": "^4.0.0",
+    "purescript-arraybuffer-types": "^2.0.0"
   }
 }
