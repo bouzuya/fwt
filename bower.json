@@ -7,6 +7,7 @@
     "output"
   ],
   "dependencies": {
+    "purescript-dom": "git+https://github.com/bouzuya/purescript-dom.git#v4.16.0-bouzuya",
     "purescript-console": "^3.0.0",
     "purescript-datetime": "^3.4.1",
     "purescript-eff": "^3.2.1",
@@ -22,7 +23,7 @@
     "purescript-psci-support": "^3.0.0"
   },
   "resolutions": {
-    "purescript-aff": "^4.0.0",
-    "purescript-arraybuffer-types": "^2.0.0"
+    "purescript-aff": "^3.1.0",
+    "purescript-dom": "v4.16.0-bouzuya"
   }
 }
