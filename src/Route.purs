@@ -1,4 +1,7 @@
-module Route (MyRoute, myRoute) where
+module Route
+  ( MyRoute(Index, Users, User)
+  , myRoute
+  ) where
 
 import Control.Applicative ((*>), (<$), (<*))
 import Data.Foldable (oneOf)

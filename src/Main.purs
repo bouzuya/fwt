@@ -19,7 +19,7 @@ import Hyper.Response (closeHeaders, respond, writeStatus)
 import Hyper.Status (statusOK)
 import Node.HTTP (HTTP)
 import Prelude (Unit, bind, discard)
-import Route (myRoute)
+import Route (MyRoute(..), myRoute)
 import Routing (match)
 
 newUser :: String -> UUID -> User
@@ -47,13 +47,16 @@ main = do
   log $ show $ match myRoute "/users"
   log $ show $ match myRoute "/users/abc"
   -- TODO: extract app handler
+  let users = [user']
   let app = do
         request <- getRequestData
         _ <- writeStatus statusOK
         _ <- closeHeaders
         case match myRoute request.url of
           (Left _) -> respond "ERROR"
-          (Right route) -> respond $ show $ route
+          (Right Index) -> respond "OK" -- TODO: HTML
+          (Right Users) -> respond $ show users -- TODO: JSON
+          (Right (User id)) -> respond $ show user' -- TODO: JSON
         where
           bind = ibind
   runServer defaultOptionsWithLogging {} app
