@@ -54,9 +54,9 @@ main = do
         _ <- closeHeaders
         case match myRoute request.url of
           (Left _) -> respond "ERROR"
-          (Right Index) -> respond "OK" -- TODO: HTML
-          (Right Users) -> respond $ show users -- TODO: JSON
-          (Right (User id)) -> respond $ show user' -- TODO: JSON
+          (Right RouteIndex) -> respond "OK" -- TODO: HTML
+          (Right RouteUsers) -> respond $ show users -- TODO: JSON
+          (Right (RouteUser id)) -> respond $ show user' -- TODO: JSON
         where
           bind = ibind
   runServer defaultOptionsWithLogging {} app

@@ -1,5 +1,5 @@
 module Route
-  ( MyRoute(Index, Users, User)
+  ( MyRoute(..)
   , myRoute
   ) where
 
@@ -11,23 +11,23 @@ import Data.Show (class Show)
 import Routing.Match (Match, end, lit, root, str)
 
 data MyRoute
-  = Index
-  | Users
-  | User String
+  = RouteIndex
+  | RouteUsers
+  | RouteUser String
 
 instance showMyRoute :: Show MyRoute where
-  show Index = "Index"
-  show Users = "Users"
-  show (User id) = "User " <> id
+  show RouteIndex = "Index"
+  show RouteUsers = "Users"
+  show (RouteUser id) = "User " <> id
 
 index :: Match MyRoute
-index = Index <$ (lit "" <* end)
+index = RouteIndex <$ (lit "" <* end)
 
 users :: Match MyRoute
-users = Users <$ (root *> lit "users" <* end)
+users = RouteUsers <$ (root *> lit "users" <* end)
 
 user :: Match MyRoute
-user = User <$> (root *> lit "users" *> str <* end)
+user = RouteUser <$> (root *> lit "users" *> str <* end)
 
 myRoute :: Match MyRoute
 myRoute = oneOf
