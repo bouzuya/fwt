@@ -33,6 +33,7 @@ main :: forall e. Eff ( console :: CONSOLE
                       )
                       Unit
 main = do
+  -- TODO: test data
   user' <- newUser "bouzuya" <$> genUUID
   log $ show $ user'
   instant' <- now
@@ -41,10 +42,11 @@ main = do
         time <- pure $ instant'
         pure $ fwt { face, time }
   log $ show fwt'
+  -- TODO: test route
   log $ show $ match myRoute "/"
   log $ show $ match myRoute "/users"
   log $ show $ match myRoute "/users/abc"
-  log "Hello sailor!"
+  -- TODO: extract app handler
   let app = do
         request <- getRequestData
         _ <- writeStatus statusOK
