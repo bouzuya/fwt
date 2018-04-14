@@ -1,4 +1,4 @@
-module Data.FaceWithTime (FaceWithTime, URL, fwt, url) where
+module Data.FaceWithTime (FaceWithTime, URL, face, fwt, time, url) where
 
 import Data.DateTime.Instant (Instant, toDateTime)
 import Data.Formatter.DateTime (FormatterCommand(..), format)
@@ -45,3 +45,9 @@ url = Just <$> URL -- TODO
 
 fwt :: { face :: URL, time :: Instant } -> FaceWithTime
 fwt = FaceWithTime
+
+face :: FaceWithTime -> URL
+face (FaceWithTime fwt) = fwt.face
+
+time :: FaceWithTime -> Instant
+time (FaceWithTime fwt) = fwt.time

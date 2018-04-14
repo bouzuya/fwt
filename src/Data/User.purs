@@ -1,4 +1,4 @@
-module Data.User (User, user) where
+module Data.User (User, id, name, user) where
 
 import Data.Semigroup ((<>))
 import Data.Show (class Show, show)
@@ -11,3 +11,9 @@ instance showUser :: Show User where
 
 user :: { id :: UserId, name :: String } -> User
 user = User
+
+id :: User -> UserId
+id (User user) = user.id
+
+name :: User -> String
+name (User user) = user.name
