@@ -15,7 +15,7 @@ import Data.Maybe (Maybe, maybe)
 import Data.Semigroup ((<>))
 import Data.Show (show)
 import Data.UUID (GENUUID, UUID, genUUID)
-import Data.User (User, id, name, user)
+import Data.User (User, user)
 import Data.UserId (userId)
 import Hyper.Node.Server (defaultOptionsWithLogging, runServer)
 import Hyper.Request (getRequestData)
@@ -34,15 +34,9 @@ usersView xs = "[" <> (fold $ jsonX <$> xs) <> "]"
   where
     jsonX ({ user, fwt })
       =  "{\"user\":"
-      <> jsonUser user
+      <> (stringify $ encodeJson user)
       <> ",\"fwt\":"
       <> (maybe "null" (\x -> stringify $ encodeJson x) fwt)
-      <> "}"
-    jsonUser user
-      = "{\"id\":\""
-      <> (show $ id user)
-      <> "\",\"name\":\""
-      <> name user
       <> "}"
 
 main :: forall e. Eff ( console :: CONSOLE
