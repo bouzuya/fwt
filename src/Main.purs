@@ -43,9 +43,6 @@ instance encodeJsonUsersView :: EncodeJson UsersView where
         , Tuple "fwt" $ maybe jsonNull encodeJson fwt
         ]
 
-usersView :: UsersView -> String
-usersView v = stringify $ encodeJson v
-
 main :: forall e. Eff ( console :: CONSOLE
                       , http :: HTTP
                       , now :: NOW
@@ -76,7 +73,7 @@ main = do
         case match myRoute request.url of
           (Left _) -> respond "ERROR"
           (Right RouteIndex) -> respond "OK" -- TODO: HTML
-          (Right RouteUsers) -> respond $ usersView $ UsersView users
+          (Right RouteUsers) -> respond $ stringify $ encodeJson $ UsersView users
           (Right (RouteUser id)) -> respond $ show user' -- TODO: JSON
         where
           bind = ibind
