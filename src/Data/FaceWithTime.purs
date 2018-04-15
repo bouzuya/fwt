@@ -13,7 +13,9 @@ import Data.StrMap (fromFoldable) as StrMap
 import Data.Tuple (Tuple(..))
 
 newtype URL = URL String
-derive newtype instance showURL :: Show URL
+
+instance showURL :: Show URL where
+  show (URL u) = u
 
 newtype FaceWithTime = FaceWithTime { face :: URL, time :: Instant }
 
