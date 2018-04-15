@@ -5,12 +5,13 @@ import Control.IxMonad (ibind)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Now (NOW, now)
+import Data.Argonaut (encodeJson, stringify)
 import Data.Either (Either(..))
-import Data.FaceWithTime (FaceWithTime, face, fwt, time, url)
+import Data.FaceWithTime (FaceWithTime, fwt, url)
 import Data.Function (($))
 import Data.Functor ((<$>))
-import Data.List (List, fold)
-import Data.Maybe (Maybe(..), maybe)
+import Data.List (fold)
+import Data.Maybe (Maybe, maybe)
 import Data.Semigroup ((<>))
 import Data.Show (show)
 import Data.UUID (GENUUID, UUID, genUUID)
@@ -35,19 +36,13 @@ usersView xs = "[" <> (fold $ jsonX <$> xs) <> "]"
       =  "{\"user\":"
       <> jsonUser user
       <> ",\"fwt\":"
-      <> (maybe "null" jsonFwt fwt)
+      <> (maybe "null" (\x -> stringify $ encodeJson x) fwt)
       <> "}"
     jsonUser user
       = "{\"id\":\""
       <> (show $ id user)
       <> "\",\"name\":\""
       <> name user
-      <> "}"
-    jsonFwt fwt
-      = "{\"face\":\""
-      <> (show $ face fwt)
-      <> "\",\"time\":\""
-      <> (show $ time fwt)
       <> "}"
 
 main :: forall e. Eff ( console :: CONSOLE

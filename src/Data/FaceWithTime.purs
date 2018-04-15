@@ -1,5 +1,6 @@
-module Data.FaceWithTime (FaceWithTime, URL, face, fwt, time, url) where
+module Data.FaceWithTime (FaceWithTime, URL, fwt, url) where
 
+import Data.Argonaut (class EncodeJson, fromObject, fromString)
 import Data.DateTime.Instant (Instant, toDateTime)
 import Data.Formatter.DateTime (FormatterCommand(..), format)
 import Data.Function (($))
@@ -8,11 +9,21 @@ import Data.List (fromFoldable)
 import Data.Maybe (Maybe(Just))
 import Data.Semigroup ((<>))
 import Data.Show (class Show, show)
+import Data.StrMap (fromFoldable) as StrMap
+import Data.Tuple (Tuple(..))
 
 newtype URL = URL String
 derive newtype instance showURL :: Show URL
 
 newtype FaceWithTime = FaceWithTime { face :: URL, time :: Instant }
+
+instance encodeJsonFaceWithTime :: EncodeJson FaceWithTime where
+  encodeJson (FaceWithTime { face, time }) =
+    fromObject $ StrMap.fromFoldable
+      [ Tuple "face" $ fromString $ show face
+      , Tuple "time" $ fromString $ toIso8601 time
+      ]
+
 instance showFaceWithTime :: Show FaceWithTime where
   show (FaceWithTime { face, time }) =
     "FaceWithTime" <>
@@ -45,9 +56,3 @@ url = Just <$> URL -- TODO
 
 fwt :: { face :: URL, time :: Instant } -> FaceWithTime
 fwt = FaceWithTime
-
-face :: FaceWithTime -> URL
-face (FaceWithTime fwt) = fwt.face
-
-time :: FaceWithTime -> Instant
-time (FaceWithTime fwt) = fwt.time
