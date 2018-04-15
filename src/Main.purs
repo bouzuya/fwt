@@ -1,7 +1,8 @@
 module Main (main) where
 
 import Control.Applicative (pure)
-import Control.IxMonad (ibind)
+import Control.IxMonad ((:*>), (:>>=))
+import Control.Monad.Aff (Aff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Now (NOW, now)
@@ -18,9 +19,11 @@ import Data.URL (url)
 import Data.UUID (GENUUID, UUID, genUUID)
 import Data.User (User, user)
 import Data.UserId (userId)
-import Hyper.Node.Server (defaultOptionsWithLogging, runServer)
+import Hyper.Conn (Conn)
+import Hyper.Middleware (Middleware)
+import Hyper.Node.Server (HttpRequest, HttpResponse, defaultOptionsWithLogging, runServer)
 import Hyper.Request (RequestData, getRequestData)
-import Hyper.Response (closeHeaders, respond, writeStatus)
+import Hyper.Response (ResponseEnded, StatusLineOpen, closeHeaders, respond, writeStatus)
 import Hyper.Status (Status, statusNotFound, statusOK)
 import Node.HTTP (HTTP)
 import Prelude (Unit, bind, discard)
@@ -55,6 +58,17 @@ action request = do
   path <- Just request.url
   route method path
 
+app
+  :: forall e. Array { user :: User, fwt :: Maybe FaceWithTime }
+  -> Middleware
+      (Aff ( http ∷ HTTP | e ) )
+      (Conn HttpRequest (HttpResponse StatusLineOpen) {})
+      (Conn HttpRequest (HttpResponse ResponseEnded) {})
+      Unit
+app users = getRequestData :>>= \request ->
+  let (Tuple status body) = view users $ action request
+  in writeStatus status :*> closeHeaders :*> respond body
+
 main :: forall e. Eff ( console :: CONSOLE
                       , http :: HTTP
                       , now :: NOW
@@ -75,12 +89,4 @@ main = do
   -- TODO: test route
   -- TODO: extract app handler
   let users = [{ user: user', fwt: fwt' }]
-  let app = do
-        request <- getRequestData
-        let (Tuple s b) = view users $ action request
-        _ <- writeStatus s
-        _ <- closeHeaders
-        respond b
-        where
-          bind = ibind
-  runServer defaultOptionsWithLogging {} app
+  runServer defaultOptionsWithLogging {} $ app users
