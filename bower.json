@@ -7,12 +7,14 @@
     "output"
   ],
   "dependencies": {
+    "purescript-argonaut": "^3.1.0",
     "purescript-dom": "git+https://github.com/bouzuya/purescript-dom.git#v4.16.0-bouzuya",
     "purescript-console": "^3.0.0",
     "purescript-datetime": "^3.4.1",
     "purescript-eff": "^3.2.1",
     "purescript-formatters": "^3.0.1",
     "purescript-hyper": "^0.8.0",
+    "purescript-maps": "^3.6.0",
     "purescript-maybe": "^3.1.0",
     "purescript-now": "^3.0.0",
     "purescript-prelude": "^3.2.0",
