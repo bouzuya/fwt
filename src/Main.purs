@@ -43,6 +43,15 @@ instance encodeJsonUsersView :: EncodeJson UsersView where
         , Tuple "fwt" $ maybe jsonNull encodeJson fwt
         ]
 
+view
+  :: MyRoute
+  -> Array { user :: User, fwt :: Maybe FaceWithTime }
+  -> User
+  -> String
+view RouteIndex _ _ = "OK" -- TODO: HTML
+view RouteUsers users _ = stringify $ encodeJson $ UsersView users
+view (RouteUser id) _ user = stringify $ encodeJson $ user
+
 main :: forall e. Eff ( console :: CONSOLE
                       , http :: HTTP
                       , now :: NOW
@@ -72,9 +81,7 @@ main = do
         _ <- closeHeaders
         case match myRoute request.url of
           (Left _) -> respond "ERROR"
-          (Right RouteIndex) -> respond "OK" -- TODO: HTML
-          (Right RouteUsers) -> respond $ stringify $ encodeJson $ UsersView users
-          (Right (RouteUser id)) -> respond $ show user' -- TODO: JSON
+          (Right route) -> respond $ view route users user'
         where
           bind = ibind
   runServer defaultOptionsWithLogging {} app
