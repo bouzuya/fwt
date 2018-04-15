@@ -10,9 +10,9 @@ import Data.Either (Either(..))
 import Data.FaceWithTime (FaceWithTime, fwt)
 import Data.Function (($))
 import Data.Functor ((<$>))
-import Data.List (fold)
+import Data.HTTP.Method (CustomMethod, Method)
+import Data.HTTP.Method (Method(..)) as Method
 import Data.Maybe (Maybe, maybe)
-import Data.Semigroup ((<>))
 import Data.Show (show)
 import Data.StrMap (fromFoldable) as StrMap
 import Data.Tuple (Tuple(..))
@@ -44,13 +44,14 @@ instance encodeJsonUsersView :: EncodeJson UsersView where
         ]
 
 view
-  :: MyRoute
+  :: Either Method CustomMethod
+  -> MyRoute
   -> Array { user :: User, fwt :: Maybe FaceWithTime }
-  -> User
   -> String
-view RouteIndex _ _ = "OK" -- TODO: HTML
-view RouteUsers users _ = stringify $ encodeJson $ UsersView users
-view (RouteUser id) _ user = stringify $ encodeJson $ user
+view (Left Method.GET) RouteIndex _ = "OK" -- TODO: HTML
+view (Left Method.GET) RouteUsers users = stringify $ encodeJson $ UsersView users
+view (Left Method.PATCH) (RouteUser _) _ = "{\"status\":\"OK\"}"
+view _ _ _ = "ERROR"
 
 main :: forall e. Eff ( console :: CONSOLE
                       , http :: HTTP
@@ -81,7 +82,7 @@ main = do
         _ <- closeHeaders
         case match myRoute request.url of
           (Left _) -> respond "ERROR"
-          (Right route) -> respond $ view route users user'
+          (Right route) -> respond $ view request.method route users
         where
           bind = ibind
   runServer defaultOptionsWithLogging {} app
