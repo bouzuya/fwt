@@ -47,11 +47,11 @@ view
   :: Array { user :: User, fwt :: Maybe FaceWithTime }
   -> Either Method CustomMethod
   -> MyRoute
-  -> Either Status String
-view _ (Left Method.GET) RouteIndex = Right "OK" -- TODO: HTML
-view users (Left Method.GET) RouteUsers = Right $ stringify $ encodeJson $ UsersView users
-view _ (Left Method.PUT) (RouteUser _) = Right $ "{\"status\":\"OK\"}"
-view _ _ _ = Left statusNotFound
+  -> Tuple Status String
+view _ (Left Method.GET) RouteIndex = Tuple statusOK "{\"status\":\"OK\"}" -- TODO: HTML
+view users (Left Method.GET) RouteUsers = Tuple statusOK $ stringify $ encodeJson $ UsersView users
+view _ (Left Method.PUT) (RouteUser _) = Tuple statusOK "{\"status\":\"OK\"}"
+view _ _ _ = Tuple statusNotFound "{\"status\":\"Error\"}"
 
 main :: forall e. Eff ( console :: CONSOLE
                       , http :: HTTP
@@ -79,17 +79,13 @@ main = do
   let app = do
         request <- getRequestData
         let route = match myRoute request.url
-        let response = either
-              (const $ Left statusNotFound)
+        let (Tuple s b) = either
+              (const $ Tuple statusNotFound "{\"status\":\"Error\"}")
               (view users request.method)
               route
-        _ <- case response of
-          (Left s) -> writeStatus s
-          (Right _) -> writeStatus statusOK
+        _ <- writeStatus s
         _ <- closeHeaders
-        case response of
-          (Left _) -> respond "{\"status\":\"ERROR\"}"
-          (Right b) -> respond b
+        respond b
         where
           bind = ibind
   runServer defaultOptionsWithLogging {} app
