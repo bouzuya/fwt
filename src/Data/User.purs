@@ -1,6 +1,6 @@
 module Data.User (User, user) where
 
-import Data.Argonaut (class EncodeJson, encodeJson, fromObject, fromString, stringify)
+import Data.Argonaut (class EncodeJson, encodeJson, fromObject, fromString)
 import Data.Function (($))
 import Data.Semigroup ((<>))
 import Data.Show (class Show, show)

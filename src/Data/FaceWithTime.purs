@@ -1,6 +1,6 @@
 module Data.FaceWithTime (FaceWithTime, fwt) where
 
-import Data.Argonaut (class EncodeJson, fromObject, fromString)
+import Data.Argonaut (class EncodeJson, encodeJson, fromObject, fromString)
 import Data.DateTime.Instant (Instant, toDateTime)
 import Data.Formatter.DateTime (FormatterCommand(..), format)
 import Data.Function (($))
@@ -16,7 +16,7 @@ newtype FaceWithTime = FaceWithTime { face :: URL, time :: Instant }
 instance encodeJsonFaceWithTime :: EncodeJson FaceWithTime where
   encodeJson (FaceWithTime { face, time }) =
     fromObject $ StrMap.fromFoldable
-      [ Tuple "face" $ fromString $ show face
+      [ Tuple "face" $ encodeJson face
       , Tuple "time" $ fromString $ toIso8601 time
       ]
 
