@@ -8,15 +8,13 @@ import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Now (NOW, now)
 import Control.Monad.Eff.Ref (REF, Ref, modifyRef, newRef, readRef)
-import Data.Argonaut (class EncodeJson, encodeJson, fromArray, fromObject, fromString, jsonNull, stringify)
 import Data.Array (findIndex, modifyAt)
 import Data.Either (either)
 import Data.FaceWithTime (FaceWithTime, fwt)
 import Data.Function (const, ($))
 import Data.Functor ((<$>))
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..))
 import Data.Show (show)
-import Data.StrMap (fromFoldable) as StrMap
 import Data.Tuple (Tuple(..))
 import Data.URL (url)
 import Data.UUID (GENUUID, UUID, genUUID)
@@ -31,30 +29,12 @@ import Hyper.Status (Status, statusNotFound, statusOK)
 import Node.HTTP (HTTP)
 import Prelude (Unit, bind, discard, (==))
 import Route (Action(..), route)
+import View (View(..))
+
+type State = { users :: Array { user :: User, fwt :: Maybe FaceWithTime } }
 
 newUser :: String -> UUID -> User
 newUser name uuid = User { id: userId uuid, name }
-
-type State = { users :: Array { user :: User, fwt :: Maybe FaceWithTime } }
-data View
-  = ErrorView
-  | OKView
-  | NotFoundView
-  | UsersView (Array { user :: User, fwt :: Maybe FaceWithTime })
-
-instance encodeJsonView :: EncodeJson View where
-  encodeJson ErrorView = fromObject $ StrMap.fromFoldable
-    [ Tuple "status" $ fromString "ERROR" ]
-  encodeJson OKView = fromObject $ StrMap.fromFoldable
-    [ Tuple "status" $ fromString "OK" ]
-  encodeJson NotFoundView = fromObject $ StrMap.fromFoldable
-    [ Tuple "status" $ fromString "NotFound" ]
-  encodeJson (UsersView xs) = fromArray $ encodeJson' <$> xs
-    where
-      encodeJson' ({ user, fwt }) = fromObject $ StrMap.fromFoldable
-        [ Tuple "user" $ encodeJson user
-        , Tuple "fwt" $ maybe jsonNull encodeJson fwt
-        ]
 
 modify' :: forall a. (a -> Boolean) -> (a -> a) -> Array a -> Maybe (Array a)
 modify' f g xs = do
@@ -82,7 +62,7 @@ doAction ref (Just (UpdateUser id')) = do
       users of
     Nothing -> pure $ Tuple statusNotFound NotFoundView
     (Just newUsers) -> do
-      modifyRef ref (\({ users }) -> { users: newUsers })
+      modifyRef ref (\_ -> { users: newUsers })
       pure $ Tuple statusOK OKView
 doAction _ _ = pure $ Tuple statusNotFound ErrorView
 
@@ -105,7 +85,7 @@ app ref =
     :>>= \(Tuple status view) ->
       writeStatus status
       :*> closeHeaders
-      :*> (respond $ stringify $ encodeJson view)
+      :*> (respond $ show view)
 
 main :: forall e. Eff ( console :: CONSOLE
                       , http :: HTTP
