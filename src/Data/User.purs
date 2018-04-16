@@ -1,4 +1,4 @@
-module Data.User (User, user) where
+module Data.User (User(User)) where
 
 import Data.Argonaut (class EncodeJson, encodeJson, fromObject, fromString)
 import Data.Function (($))
@@ -19,6 +19,3 @@ instance encodeJson :: EncodeJson User where
 instance showUser :: Show User where
   show (User { id, name }) =
     "User { id: \"" <> show id <> "\", name: \"" <> name <> "\" }"
-
-user :: { id :: UserId, name :: String } -> User
-user = User
