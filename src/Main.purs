@@ -23,6 +23,7 @@ import Data.User (User(User))
 import Data.UserId (userId)
 import Hyper.Conn (Conn)
 import Hyper.Middleware (Middleware, lift')
+import Hyper.Middleware.Class (getConn)
 import Hyper.Node.Server (HttpRequest, HttpResponse, defaultOptionsWithLogging, runServer)
 import Hyper.Request (RequestData, getRequestData, readBody)
 import Hyper.Response (ResponseEnded, StatusLineOpen, closeHeaders, respond, writeStatus)
@@ -32,6 +33,7 @@ import Prelude (Unit, bind, discard)
 import Route (Action, route)
 
 type State = { users :: Array { user :: User, fwt :: Maybe FaceWithTime } }
+type Components = { ref :: Ref State }
 type RequestBody = String
 type ActionWithBody = Tuple Action RequestBody
 
@@ -72,8 +74,8 @@ getActionWithBody
 getActionWithBody = actionWithBody <$> getRequestData'
 
 app
-  :: forall e c. Ref State
-  -> Middleware
+  :: forall e
+  . Middleware
       (Aff ( avar :: AVAR
            , buffer :: BUFFER
            , http ∷ HTTP
@@ -81,12 +83,13 @@ app
            , ref :: REF
            | e
            ))
-      (Conn HttpRequest (HttpResponse StatusLineOpen) c)
-      (Conn HttpRequest (HttpResponse ResponseEnded) c)
+      (Conn HttpRequest (HttpResponse StatusLineOpen) Components)
+      (Conn HttpRequest (HttpResponse ResponseEnded) Components)
       Unit
-app ref =
-  getActionWithBody
-  :>>= \action' -> (lift' $ liftEff $ doAction ref action')
+app =
+  getConn
+  :>>= \conn -> Tuple conn.components.ref <$> getActionWithBody
+  :>>= \(Tuple ref action') -> (lift' $ liftEff $ doAction ref action')
   :>>= \(Tuple status view) ->
     writeStatus status
     :*> closeHeaders
@@ -116,4 +119,5 @@ main = do
   -- TODO: extract app handler
   let users = [{ user: user', fwt: fwt' }]
   ref <- newRef { users }
-  runServer defaultOptionsWithLogging {} $ app ref
+  let components = { ref }
+  runServer defaultOptionsWithLogging components app
