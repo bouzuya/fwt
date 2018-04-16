@@ -1,20 +1,19 @@
 module View (View(..)) where
 
 import Data.Argonaut (class EncodeJson, encodeJson, fromArray, fromObject, fromString, jsonNull, stringify)
-import Data.FaceWithTime (FaceWithTime)
 import Data.Function (($))
 import Data.Functor ((<$>))
-import Data.Maybe (Maybe, maybe)
+import Data.Maybe (maybe)
 import Data.Show (class Show)
 import Data.StrMap (fromFoldable) as StrMap
 import Data.Tuple (Tuple(..))
-import Data.User (User)
+import Data.UserStatus (UserStatus)
 
 data View
   = ErrorView
   | OKView
   | NotFoundView
-  | UsersView (Array { user :: User, fwt :: Maybe FaceWithTime })
+  | UsersView (Array UserStatus)
 
 instance encodeJsonView :: EncodeJson View where
   encodeJson ErrorView = fromObject $ StrMap.fromFoldable
