@@ -23,7 +23,6 @@ import Data.User (User(User))
 import Data.UserId (userId)
 import Hyper.Conn (Conn)
 import Hyper.Middleware (Middleware, lift')
-import Hyper.Middleware.Class (getConn)
 import Hyper.Node.Server (HttpRequest, HttpResponse, defaultOptionsWithLogging, runServer)
 import Hyper.Request (RequestData, getRequestData, readBody)
 import Hyper.Response (ResponseEnded, StatusLineOpen, closeHeaders, respond, writeStatus)
@@ -39,15 +38,41 @@ type ActionWithBody = Tuple Action RequestBody
 newUser :: String -> UUID -> User
 newUser name uuid = User { id: userId uuid, name }
 
-action :: RequestData -> RequestBody -> Maybe ActionWithBody
-action request body = do
+getRequestData'
+  :: forall e res c
+  . Middleware
+      (Aff ( avar :: AVAR
+           , buffer :: BUFFER
+           , http ∷ HTTP
+           | e
+           ))
+      (Conn HttpRequest res c)
+      (Conn HttpRequest res c)
+      (Tuple RequestData RequestBody)
+getRequestData' = getRequestData :>>= \request -> Tuple request <$> readBody
+
+actionWithBody :: (Tuple RequestData RequestBody) -> Maybe ActionWithBody
+actionWithBody (Tuple request body) = do
   method <- either Just (const Nothing) request.method
   path <- pure $ request.url
   action <- route method path
   pure $ Tuple action body
 
+getActionWithBody
+  :: forall e res c
+  . Middleware
+      (Aff ( avar :: AVAR
+           , buffer :: BUFFER
+           , http ∷ HTTP
+           | e
+           ))
+      (Conn HttpRequest res c)
+      (Conn HttpRequest res c)
+      (Maybe ActionWithBody)
+getActionWithBody = actionWithBody <$> getRequestData'
+
 app
-  :: forall e. Ref State
+  :: forall e c. Ref State
   -> Middleware
       (Aff ( avar :: AVAR
            , buffer :: BUFFER
@@ -56,13 +81,12 @@ app
            , ref :: REF
            | e
            ))
-      (Conn HttpRequest (HttpResponse StatusLineOpen) {})
-      (Conn HttpRequest (HttpResponse ResponseEnded) {})
+      (Conn HttpRequest (HttpResponse StatusLineOpen) c)
+      (Conn HttpRequest (HttpResponse ResponseEnded) c)
       Unit
 app ref =
-  getRequestData
-  :>>= \request -> Tuple request <$> readBody
-  :>>= \(Tuple request body) -> (lift' $ liftEff $ doAction ref $ action request body)
+  getActionWithBody
+  :>>= \action' -> (lift' $ liftEff $ doAction ref action')
   :>>= \(Tuple status view) ->
     writeStatus status
     :*> closeHeaders
