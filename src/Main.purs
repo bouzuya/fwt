@@ -4,6 +4,7 @@ import Action (doAction)
 import Control.Applicative (pure)
 import Control.IxMonad ((:*>), (:>>=))
 import Control.Monad.Aff (Aff)
+import Control.Monad.Aff.AVar (AVAR)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Console (CONSOLE, log)
@@ -22,40 +23,54 @@ import Data.User (User(User))
 import Data.UserId (userId)
 import Hyper.Conn (Conn)
 import Hyper.Middleware (Middleware, lift')
+import Hyper.Middleware.Class (getConn)
 import Hyper.Node.Server (HttpRequest, HttpResponse, defaultOptionsWithLogging, runServer)
-import Hyper.Request (RequestData, getRequestData)
+import Hyper.Request (RequestData, getRequestData, readBody)
 import Hyper.Response (ResponseEnded, StatusLineOpen, closeHeaders, respond, writeStatus)
+import Node.Buffer (BUFFER)
 import Node.HTTP (HTTP)
 import Prelude (Unit, bind, discard)
 import Route (Action, route)
 
 type State = { users :: Array { user :: User, fwt :: Maybe FaceWithTime } }
+type RequestBody = String
+type ActionWithBody = Tuple Action RequestBody
 
 newUser :: String -> UUID -> User
 newUser name uuid = User { id: userId uuid, name }
 
-action :: RequestData -> Maybe Action
-action request = do
+action :: RequestData -> RequestBody -> Maybe ActionWithBody
+action request body = do
   method <- either Just (const Nothing) request.method
-  path <- Just request.url
-  route method path
+  path <- pure $ request.url
+  action <- route method path
+  pure $ Tuple action body
 
 app
   :: forall e. Ref State
   -> Middleware
-      (Aff ( http ∷ HTTP, now :: NOW, ref :: REF | e ) )
+      (Aff ( avar :: AVAR
+           , buffer :: BUFFER
+           , http ∷ HTTP
+           , now :: NOW
+           , ref :: REF
+           | e
+           ))
       (Conn HttpRequest (HttpResponse StatusLineOpen) {})
       (Conn HttpRequest (HttpResponse ResponseEnded) {})
       Unit
 app ref =
   getRequestData
-    :>>= \request -> (lift' $ liftEff $ doAction ref $ action request)
-    :>>= \(Tuple status view) ->
-      writeStatus status
-      :*> closeHeaders
-      :*> (respond $ show view)
+  :>>= \request -> Tuple request <$> readBody
+  :>>= \(Tuple request body) -> (lift' $ liftEff $ doAction ref $ action request body)
+  :>>= \(Tuple status view) ->
+    writeStatus status
+    :*> closeHeaders
+    :*> (respond $ show view)
 
-main :: forall e. Eff ( console :: CONSOLE
+main :: forall e. Eff ( avar :: AVAR
+                      , buffer :: BUFFER
+                      , console :: CONSOLE
                       , http :: HTTP
                       , now :: NOW
                       , ref :: REF

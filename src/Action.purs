@@ -54,14 +54,14 @@ updateUser ref id' = do
 
 doAction
   :: forall e. Ref State
-  -> Maybe Action
+  -> Maybe (Tuple Action String)
   -> Eff ( now :: NOW, ref :: REF | e ) (Tuple Status View)
-doAction _ (Just GetIndex) = do
+doAction _ (Just (Tuple GetIndex _)) = do
   pure $ Tuple statusOK OKView
-doAction ref (Just GetUsers) = do
+doAction ref (Just (Tuple GetUsers _)) = do
   users <- getUsers ref
   pure $ Tuple statusOK (UsersView users)
-doAction ref (Just (UpdateUser id')) = do
+doAction ref (Just (Tuple (UpdateUser id') json)) = do
   result <- updateUser ref id'
   pure $ case result of
     Nothing -> Tuple statusNotFound NotFoundView
