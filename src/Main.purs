@@ -61,15 +61,15 @@ modify' f g xs = do
   index <- findIndex f xs
   modifyAt index g xs
 
-view
+doAction
   :: forall e. Ref State
   -> Maybe Action
   -> Eff ( now :: NOW, ref :: REF | e ) (Tuple Status View)
-view _ (Just GetIndex) = pure $ Tuple statusOK OKView
-view ref (Just GetUsers) = do
+doAction _ (Just GetIndex) = pure $ Tuple statusOK OKView
+doAction ref (Just GetUsers) = do
   { users } <- readRef ref
   pure $ Tuple statusOK $ UsersView users
-view ref (Just (UpdateUser id')) = do
+doAction ref (Just (UpdateUser id')) = do
   time <- now
   { users } <- readRef ref
   case
@@ -84,7 +84,7 @@ view ref (Just (UpdateUser id')) = do
     (Just newUsers) -> do
       modifyRef ref (\({ users }) -> { users: newUsers })
       pure $ Tuple statusOK OKView
-view _ _ = pure $ Tuple statusNotFound ErrorView
+doAction _ _ = pure $ Tuple statusNotFound ErrorView
 
 action :: RequestData -> Maybe Action
 action request = do
@@ -101,7 +101,7 @@ app
       Unit
 app ref =
   getRequestData
-    :>>= \request -> (lift' $ liftEff $ view ref $ action request)
+    :>>= \request -> (lift' $ liftEff $ doAction ref $ action request)
     :>>= \(Tuple status view) ->
       writeStatus status
       :*> closeHeaders
