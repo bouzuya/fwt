@@ -4,7 +4,9 @@ import Control.Applicative (pure)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Now (NOW, now)
 import Control.Monad.Eff.Ref (REF, Ref, modifyRef, readRef)
+import Data.Argonaut (class DecodeJson, decodeJson, jsonParser, (.?))
 import Data.Array (findIndex, modifyAt)
+import Data.Either (Either(..))
 import Data.FaceWithTime (fwt)
 import Data.Function (($))
 import Data.Functor ((<$>))
@@ -14,12 +16,20 @@ import Data.Tuple (Tuple(..))
 import Data.URL (url)
 import Data.User (User(User))
 import Data.UserStatus (UserStatus)
-import Hyper.Status (Status, statusNotFound, statusOK)
-import Prelude (bind, discard, (==))
+import Hyper.Status (Status, statusBadRequest, statusNotFound, statusOK)
+import Prelude (bind, discard, (==), (>>=))
 import Route (Action(..))
 import View (View(..))
 
 type State = { users :: Array UserStatus }
+newtype UpdateUserBody
+  = UpdateUserBody { face :: String }
+
+instance decodeJsonUpdateUserBody :: DecodeJson UpdateUserBody where
+  decodeJson json = do
+    o <- decodeJson json
+    face <- o .? "face"
+    pure $ UpdateUserBody { face }
 
 modify' :: forall a. (a -> Boolean) -> (a -> a) -> Array a -> Maybe (Array a)
 modify' f g xs = do
@@ -35,8 +45,9 @@ updateUser
   :: forall e
   . Ref State
   -> String
+  -> UpdateUserBody
   -> Eff ( now :: NOW, ref :: REF | e) (Maybe (Array UserStatus))
-updateUser ref id' = do
+updateUser ref id' (UpdateUserBody { face }) = do
   time <- now
   { users } <- readRef ref
   case
@@ -44,7 +55,7 @@ updateUser ref id' = do
       (\({ user: (User { id }) }) -> show id == id')
       (\({ user }) ->
         { user
-        , fwt: (\face -> fwt { face, time }) <$> url "http://example.com"
+        , fwt: (\face -> fwt { face, time }) <$> url face
         })
       users of
     Nothing -> pure Nothing
@@ -61,10 +72,13 @@ doAction _ (Just (Tuple GetIndex _)) = do
 doAction ref (Just (Tuple GetUsers _)) = do
   users <- getUsers ref
   pure $ Tuple statusOK (UsersView users)
-doAction ref (Just (Tuple (UpdateUser id') json)) = do
-  result <- updateUser ref id'
-  pure $ case result of
-    Nothing -> Tuple statusNotFound NotFoundView
-    (Just _) -> Tuple statusOK OKView
+doAction ref (Just (Tuple (UpdateUser id') body)) = do
+  case (jsonParser body >>= decodeJson) :: Either String UpdateUserBody of
+    Left _ -> pure $ Tuple statusBadRequest BadRequestView
+    Right body' -> do
+      result <- updateUser ref id' body'
+      pure $ case result of
+        Nothing -> Tuple statusNotFound NotFoundView
+        (Just _) -> Tuple statusOK OKView
 doAction _ _ = do
   pure $ Tuple statusNotFound ErrorView

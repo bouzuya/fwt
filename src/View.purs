@@ -10,18 +10,21 @@ import Data.Tuple (Tuple(..))
 import Data.UserStatus (UserStatus)
 
 data View
-  = ErrorView
-  | OKView
+  = BadRequestView
+  | ErrorView
   | NotFoundView
+  | OKView
   | UsersView (Array UserStatus)
 
 instance encodeJsonView :: EncodeJson View where
+  encodeJson BadRequestView = fromObject $ StrMap.fromFoldable
+    [ Tuple "status" $ fromString "BadRequest" ]
   encodeJson ErrorView = fromObject $ StrMap.fromFoldable
     [ Tuple "status" $ fromString "ERROR" ]
-  encodeJson OKView = fromObject $ StrMap.fromFoldable
-    [ Tuple "status" $ fromString "OK" ]
   encodeJson NotFoundView = fromObject $ StrMap.fromFoldable
     [ Tuple "status" $ fromString "NotFound" ]
+  encodeJson OKView = fromObject $ StrMap.fromFoldable
+    [ Tuple "status" $ fromString "OK" ]
   encodeJson (UsersView xs) = fromArray $ encodeJson' <$> xs
     where
       encodeJson' ({ user, fwt }) = fromObject $ StrMap.fromFoldable
