@@ -13,6 +13,7 @@
     "purescript-datetime": "^3.4.1",
     "purescript-eff": "^3.2.1",
     "purescript-formatters": "^3.0.1",
+    "purescript-halogen": "^3.1.3",
     "purescript-hyper": "git+https://github.com/owickstrom/hyper.git#abba73f24bc8c3511be04ea5f5fcb458e8b366fe",
     "purescript-maps": "^3.6.0",
     "purescript-maybe": "^3.1.0",
