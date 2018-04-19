@@ -55,7 +55,7 @@ updateUser ref id' (UpdateUserBody { face }) = do
       (\({ user: (User { id }) }) -> show id == id')
       (\({ user }) ->
         { user
-        , fwt: (\face -> fwt { face, time }) <$> url face
+        , fwt: (\f -> fwt { face: f, time }) <$> url face
         })
       users of
     Nothing -> pure Nothing
