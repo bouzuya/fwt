@@ -12,6 +12,7 @@ import Data.UserStatus (UserStatus)
 data View
   = BadRequestView
   | ErrorView
+  | IndexView
   | NotFoundView
   | OKView
   | UsersView (Array UserStatus)
@@ -21,6 +22,8 @@ instance encodeJsonView :: EncodeJson View where
     [ Tuple "status" $ fromString "BadRequest" ]
   encodeJson ErrorView = fromObject $ StrMap.fromFoldable
     [ Tuple "status" $ fromString "ERROR" ]
+  encodeJson IndexView = fromObject $ StrMap.fromFoldable
+    [ Tuple "status" $ fromString "Index" ]
   encodeJson NotFoundView = fromObject $ StrMap.fromFoldable
     [ Tuple "status" $ fromString "NotFound" ]
   encodeJson OKView = fromObject $ StrMap.fromFoldable
@@ -33,4 +36,5 @@ instance encodeJsonView :: EncodeJson View where
         ]
 
 instance showView :: Show View where
+  show IndexView = ""
   show x = stringify $ encodeJson x

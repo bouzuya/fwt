@@ -68,7 +68,7 @@ doAction
   -> Maybe (Tuple Action String)
   -> Eff ( now :: NOW, ref :: REF | e ) (Tuple Status View)
 doAction _ (Just (Tuple GetIndex _)) = do
-  pure $ Tuple statusOK OKView
+  pure $ Tuple statusOK IndexView
 doAction ref (Just (Tuple GetUsers _)) = do
   users <- getUsers ref
   pure $ Tuple statusOK (UsersView users)
