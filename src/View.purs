@@ -54,6 +54,7 @@ indexView = HH.html []
           [ HH.a [ HP.href "https://bouzuya.net/" ] [ HH.text "bouzuya" ] ]
         ]
       ]
+    , HH.script [ HP.src "/scripts/index.js" ] []
     ]
   ]
 

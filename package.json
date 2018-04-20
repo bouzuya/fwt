@@ -31,7 +31,9 @@
   },
   "scripts": {
     "bower:install": "bower install",
-    "build": "npm run pulp:build",
+    "build": "npm-run-all -s build:client build:server",
+    "build:server": "npm run pulp:build",
+    "build:client": "pulp browserify --main Client.Main --optimise --to public/scripts/index.js",
     "clean": "rimraf .pulp-cache output",
     "prepare": "npm-run-all -s bower:install clean build",
     "pulp:build": "pulp build",
