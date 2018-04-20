@@ -15,6 +15,7 @@ import Data.FaceWithTime (FaceWithTime, fwt)
 import Data.Function (const, ($))
 import Data.Functor ((<$>))
 import Data.Maybe (Maybe(..))
+import Data.Semigroup ((<>))
 import Data.Show (show)
 import Data.Tuple (Tuple(..))
 import Data.URL (url)
@@ -24,11 +25,14 @@ import Data.UserId (userId)
 import Hyper.Conn (Conn)
 import Hyper.Middleware (Middleware, lift')
 import Hyper.Middleware.Class (getConn)
+import Hyper.Node.FileServer (fileServer)
 import Hyper.Node.Server (HttpRequest, HttpResponse, defaultOptionsWithLogging, runServer)
 import Hyper.Request (RequestData, getRequestData, readBody)
 import Hyper.Response (ResponseEnded, StatusLineOpen, closeHeaders, respond, writeStatus)
 import Node.Buffer (BUFFER)
+import Node.FS (FS)
 import Node.HTTP (HTTP)
+import Node.Process (PROCESS, cwd)
 import Prelude (Unit, bind, discard)
 import Route (Action, route)
 
@@ -98,8 +102,10 @@ app =
 main :: forall e. Eff ( avar :: AVAR
                       , buffer :: BUFFER
                       , console :: CONSOLE
+                      , fs :: FS
                       , http :: HTTP
                       , now :: NOW
+                      , process :: PROCESS
                       , ref :: REF
                       , uuid :: GENUUID
                       | e
@@ -120,4 +126,6 @@ main = do
   let users = [{ user: user', fwt: fwt' }]
   ref <- newRef { users }
   let components = { ref }
-  runServer defaultOptionsWithLogging components app
+  currentDirectory <- cwd
+  runServer defaultOptionsWithLogging components $
+    fileServer (currentDirectory <> "/public") app
