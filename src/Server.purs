@@ -1,4 +1,4 @@
-module Main (main) where
+module Server (main) where
 
 import Action (doAction)
 import Control.Applicative (pure)

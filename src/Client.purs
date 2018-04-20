@@ -1,4 +1,4 @@
-module Client.Main
+module Client
   ( main
   ) where
 
