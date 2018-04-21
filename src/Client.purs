@@ -13,6 +13,7 @@ import DOM (DOM)
 import Data.Function (const)
 import Data.Maybe (Maybe(..))
 import Data.NaturalTransformation (type (~>))
+import Data.Semigroup ((<>))
 import Data.Unit (Unit, unit)
 import Halogen (liftEff)
 import Halogen as H
@@ -23,30 +24,34 @@ import Halogen.HTML.Properties as HP
 import Halogen.VDom.Driver (runUI)
 import Prelude (discard, not, ($))
 
-type State = Boolean
+type State =
+  { isOn :: Boolean
+  , label :: String
+  }
 
 data Query a
   = Toggle a
   | IsOn (Boolean -> a)
 
 data Message = Toggled Boolean
+type Input = String
 
-button :: forall m. H.Component HH.HTML Query Unit Message m
+button :: forall m. H.Component HH.HTML Query Input Message m
 button =
   H.component
-    { initialState: const initialState
+    { initialState
     , render
     , eval
     , receiver: const Nothing
     }
   where
-    initialState :: State
-    initialState = false
+    initialState :: Input -> State
+    initialState label = { isOn: false, label }
 
     render :: State -> H.ComponentHTML Query
     render state =
       let
-        label = if state then "On" else "Off"
+        label = state.label <> ":" <> if state.isOn then "On" else "Off"
       in
         HH.button
           [ HP.title label
@@ -58,13 +63,16 @@ button =
     eval = case _ of
       Toggle next -> do
         state <- H.get
-        let nextState = not state
+        let nextState =
+              { isOn: not state.isOn
+              , label: state.label
+              }
         H.put nextState
-        H.raise $ Toggled nextState
+        H.raise $ Toggled nextState.isOn
         pure next
       IsOn reply -> do
         state <- H.get
-        pure (reply state)
+        pure (reply state.isOn)
 
 main :: forall e. Eff ( avar :: AVAR
                       , console :: CONSOLE
@@ -77,4 +85,4 @@ main :: forall e. Eff ( avar :: AVAR
 main = HA.runHalogenAff do
   liftEff $ log "Hello!"
   body <- HA.awaitBody
-  runUI button unit body
+  runUI button "Hello!" body
