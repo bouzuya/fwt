@@ -10,8 +10,9 @@
     "purescript-affjax": "git+https://github.com/bouzuya/purescript-affjax.git#v5.0.0-bouzuya",
     "purescript-aff-promise": "^1.0.0",
     "purescript-argonaut": "^3.1.0",
-    "purescript-dom": "git+https://github.com/bouzuya/purescript-dom.git#v4.16.0-bouzuya",
+    "purescript-canvas": "^3.3.0",
     "purescript-console": "^3.0.0",
+    "purescript-dom": "git+https://github.com/bouzuya/purescript-dom.git#v4.16.0-bouzuya",
     "purescript-datetime": "^3.4.1",
     "purescript-eff": "^3.2.1",
     "purescript-formatters": "^3.0.1",
@@ -31,6 +32,7 @@
   },
   "resolutions": {
     "purescript-aff": "^3.1.0",
-    "purescript-dom": "v4.16.0-bouzuya"
+    "purescript-dom": "v4.16.0-bouzuya",
+    "purescript-arraybuffer-types": "^2.0.0"
   }
 }
