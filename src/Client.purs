@@ -14,7 +14,7 @@ import Data.Function (const)
 import Data.Maybe (Maybe(..))
 import Data.NaturalTransformation (type (~>))
 import Data.Semigroup ((<>))
-import Data.Unit (Unit, unit)
+import Data.Unit (Unit)
 import Halogen (liftEff)
 import Halogen as H
 import Halogen.Aff as HA
@@ -25,12 +25,17 @@ import Halogen.VDom.Driver (runUI)
 import Prelude (discard, not, ($))
 
 type State =
-  { isOn :: Boolean
+  { face :: String
+  , isOn :: Boolean
   , label :: String
+  , userId :: String
   }
 
 data Query a
-  = Toggle a
+  = Request a
+  | Toggle a
+  | UpdateFace String a
+  | UpdateUserId String a
   | IsOn (Boolean -> a)
 
 data Message = Toggled Boolean
@@ -46,29 +51,53 @@ button =
     }
   where
     initialState :: Input -> State
-    initialState label = { isOn: false, label }
+    initialState label = { face: "", isOn: false, label, userId: "bouzuya" }
 
     render :: State -> H.ComponentHTML Query
     render state =
       let
         label = state.label <> ":" <> if state.isOn then "On" else "Off"
       in
-        HH.button
+        HH.div []
+        [ HH.button
           [ HP.title label
           , HE.onClick (HE.input_ Toggle)
           ]
           [ HH.text label ]
+        , HH.label []
+          [ HH.span [] [ HH.text "user id" ]
+          , HH.input
+            [ HE.onValueChange (HE.input UpdateUserId)
+            , HP.value state.userId
+            ]
+          ]
+        , HH.label []
+          [ HH.span [] [ HH.text "face" ]
+          , HH.input
+            [ HE.onValueChange (HE.input UpdateFace)
+            , HP.value state.face
+            ]
+          ]
+        , HH.button
+          [ HE.onClick (HE.input_ Request)
+          ]
+          [ HH.text "OK" ]
+        ]
 
     eval :: Query ~> H.ComponentDSL State Query Message m
     eval = case _ of
+      Request next -> pure next -- TODO
       Toggle next -> do
         state <- H.get
-        let nextState =
-              { isOn: not state.isOn
-              , label: state.label
-              }
+        let nextState = state { isOn = not state.isOn }
         H.put nextState
         H.raise $ Toggled nextState.isOn
+        pure next
+      UpdateFace face next -> do
+        H.modify (\s -> s { face = face })
+        pure next
+      UpdateUserId userId next -> do
+        H.modify (\s -> s { userId = userId })
         pure next
       IsOn reply -> do
         state <- H.get
