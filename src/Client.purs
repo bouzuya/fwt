@@ -16,6 +16,7 @@ import Data.Maybe (Maybe(..))
 import Data.NaturalTransformation (type (~>))
 import Data.Semigroup ((<>))
 import Data.Unit (Unit)
+import Data.UserStatus (UserStatus)
 import Halogen (liftEff)
 import Halogen as H
 import Halogen.Aff as HA
@@ -33,10 +34,12 @@ type State =
   , loading :: Boolean
   , result :: Maybe String
   , userId :: String
+  , users :: Array UserStatus
   }
 
 data Query a
-  = Request a
+  = LoadRequest a
+  | SaveRequest a
   | Toggle a
   | UpdateFace String a
   | UpdateUserId String a
@@ -62,6 +65,7 @@ button =
       , loading: false
       , result: Nothing
       , userId: "bouzuya"
+      , users: []
       }
 
     render :: State -> H.ComponentHTML Query
@@ -90,9 +94,13 @@ button =
             ]
           ]
         , HH.button
-          [ HE.onClick (HE.input_ Request)
+          [ HE.onClick (HE.input_ LoadRequest)
           ]
-          [ HH.text "OK" ]
+          [ HH.text "LOAD" ]
+        , HH.button
+          [ HE.onClick (HE.input_ SaveRequest)
+          ]
+          [ HH.text "SAVE" ]
         , HH.span []
           [ if state.loading then HH.text "LOADING..." else HH.text ""
           ]
@@ -100,7 +108,13 @@ button =
 
     eval :: Query ~> H.ComponentDSL State Query Message (Aff (ajax :: AX.AJAX | e))
     eval = case _ of
-      Request next -> do
+      LoadRequest next -> do
+        { face, userId } <- H.get
+        H.modify (_ { loading = true })
+        response <- H.liftAff $ AX.get "/users"
+        H.modify (_ { loading = false, result = Just response.response })
+        pure next
+      SaveRequest next -> do
         { face, userId } <- H.get
         H.modify (_ { loading = true })
         response <- H.liftAff $ AX.put ("/users/" <> userId) ("{\"face\":\"" <> face <> "\"}")
