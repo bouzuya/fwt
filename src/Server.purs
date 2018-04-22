@@ -118,7 +118,7 @@ main = do
   log $ show $ user'
   instant' <- now
   let fwt' = do
-        face <- url "https://bouzuya.net/"
+        face <- url "https://bouzuya.net/images/bouzuya-icon-v3.png"
         time <- pure $ instant'
         pure $ fwt { face, time }
   log $ show fwt'

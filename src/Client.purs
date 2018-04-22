@@ -81,6 +81,11 @@ button =
             [ HH.div [ HP.class_ $ ClassName "label"] [ HH.text l ]
             , HH.div [ HP.class_ $ ClassName "value"] [ HH.text v ]
             ]
+        landimg c l v =
+          HH.div [ HP.class_ $ ClassName c ]
+            [ HH.div [ HP.class_ $ ClassName "label"] [ HH.text l ]
+            , HH.div [ HP.class_ $ ClassName "value"] [ HH.img [ HP.src v ] ]
+            ]
         usersContainer =
           (\(UserStatus
               { fwt
@@ -89,7 +94,7 @@ button =
               HH.div []
               [ landv "user-id" "UserId" $ show userId
               , landv "user-name" "UserName" $ userName
-              , landv "face" "Face" $ maybe "" (\(FaceWithTime { face }) -> show face) fwt
+              , landimg "face" "Face" $ maybe "" (\(FaceWithTime { face }) -> show face) fwt
               , landv "time" "Time" $ maybe "" (\(FaceWithTime { time }) -> show time) fwt
               ]
           ) <$> state.users
