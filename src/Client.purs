@@ -4,6 +4,7 @@ module Client
 
 import Control.Applicative (pure)
 import Control.Bind (bind)
+import Control.Monad.Aff (Aff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.AVar (AVAR)
 import Control.Monad.Eff.Console (CONSOLE, log)
@@ -22,12 +23,15 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.Driver (runUI)
+import Network.HTTP.Affjax as AX
 import Prelude (discard, not, ($))
 
 type State =
   { face :: String
   , isOn :: Boolean
   , label :: String
+  , loading :: Boolean
+  , result :: Maybe String
   , userId :: String
   }
 
@@ -41,7 +45,7 @@ data Query a
 data Message = Toggled Boolean
 type Input = String
 
-button :: forall m. H.Component HH.HTML Query Input Message m
+button :: forall e. H.Component HH.HTML Query Input Message (Aff (ajax :: AX.AJAX | e))
 button =
   H.component
     { initialState
@@ -51,7 +55,14 @@ button =
     }
   where
     initialState :: Input -> State
-    initialState label = { face: "", isOn: false, label, userId: "bouzuya" }
+    initialState label =
+      { face: ""
+      , isOn: false
+      , label
+      , loading: false
+      , result: Nothing
+      , userId: "bouzuya"
+      }
 
     render :: State -> H.ComponentHTML Query
     render state =
@@ -82,11 +93,19 @@ button =
           [ HE.onClick (HE.input_ Request)
           ]
           [ HH.text "OK" ]
+        , HH.span []
+          [ if state.loading then HH.text "LOADING..." else HH.text ""
+          ]
         ]
 
-    eval :: Query ~> H.ComponentDSL State Query Message m
+    eval :: Query ~> H.ComponentDSL State Query Message (Aff (ajax :: AX.AJAX | e))
     eval = case _ of
-      Request next -> pure next -- TODO
+      Request next -> do
+        { face, userId } <- H.get
+        H.modify (_ { loading = true })
+        response <- H.liftAff $ AX.put ("/users/" <> userId) ("{\"face\":\"" <> face <> "\"}")
+        H.modify (_ { loading = false, result = Just response.response })
+        pure next
       Toggle next -> do
         state <- H.get
         let nextState = state { isOn = not state.isOn }
@@ -103,7 +122,8 @@ button =
         state <- H.get
         pure (reply state.isOn)
 
-main :: forall e. Eff ( avar :: AVAR
+main :: forall e. Eff ( ajax :: AX.AJAX
+                      , avar :: AVAR
                       , console :: CONSOLE
                       , dom :: DOM
                       , exception :: EXCEPTION
