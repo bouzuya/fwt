@@ -2,7 +2,7 @@ module Client
   ( main
   ) where
 
-import Control.Applicative (pure)
+import Control.Applicative (pure, (<$>))
 import Control.Bind (bind)
 import Control.Monad.Aff (Aff)
 import Control.Monad.Eff (Eff)
@@ -11,13 +11,17 @@ import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Exception (EXCEPTION)
 import Control.Monad.Eff.Ref (REF)
 import DOM (DOM)
-import Data.Function (const)
-import Data.Maybe (Maybe(..))
+import Data.Argonaut (decodeJson)
+import Data.Either (either)
+import Data.FaceWithTime (FaceWithTime(..))
+import Data.Function (const, id)
+import Data.Maybe (Maybe(..), maybe)
 import Data.NaturalTransformation (type (~>))
 import Data.Semigroup ((<>))
 import Data.Unit (Unit)
-import Data.UserStatus (UserStatus)
-import Halogen (liftEff)
+import Data.User (User(..))
+import Data.UserStatus (UserStatus(..))
+import Halogen (ClassName(..), liftEff)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
@@ -25,7 +29,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.Driver (runUI)
 import Network.HTTP.Affjax as AX
-import Prelude (discard, not, ($))
+import Prelude (discard, not, show, ($))
 
 type State =
   { face :: String
@@ -72,9 +76,26 @@ button =
     render state =
       let
         label = state.label <> ":" <> if state.isOn then "On" else "Off"
+        landv c l v =
+          HH.div [ HP.class_ $ ClassName c ]
+            [ HH.div [ HP.class_ $ ClassName "label"] [ HH.text l ]
+            , HH.div [ HP.class_ $ ClassName "value"] [ HH.text v ]
+            ]
+        usersContainer =
+          (\(UserStatus
+              { fwt
+              , user: (User { id: userId, name: userName })
+              }) ->
+              HH.div []
+              [ landv "user-id" "UserId" $ show userId
+              , landv "user-name" "UserName" $ userName
+              , landv "face" "Face" $ maybe "" (\(FaceWithTime { face }) -> show face) fwt
+              , landv "time" "Time" $ maybe "" (\(FaceWithTime { time }) -> show time) fwt
+              ]
+          ) <$> state.users
       in
         HH.div []
-        [ HH.button
+        ([ HH.button
           [ HP.title label
           , HE.onClick (HE.input_ Toggle)
           ]
@@ -104,7 +125,7 @@ button =
         , HH.span []
           [ if state.loading then HH.text "LOADING..." else HH.text ""
           ]
-        ]
+        ] <> usersContainer)
 
     eval :: Query ~> H.ComponentDSL State Query Message (Aff (ajax :: AX.AJAX | e))
     eval = case _ of
@@ -112,7 +133,8 @@ button =
         { face, userId } <- H.get
         H.modify (_ { loading = true })
         response <- H.liftAff $ AX.get "/users"
-        H.modify (_ { loading = false, result = Just response.response })
+        let users = either (const []) id $ decodeJson response.response
+        H.modify (_ { loading = false, users = users })
         pure next
       SaveRequest next -> do
         { face, userId } <- H.get

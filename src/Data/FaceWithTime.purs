@@ -1,4 +1,4 @@
-module Data.FaceWithTime (FaceWithTime, fwt) where
+module Data.FaceWithTime (FaceWithTime(..), fwt) where
 
 import Control.Bind (bind, pure, (<$>), (>>=))
 import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson, fromObject, fromString, (.?))
