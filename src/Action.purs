@@ -15,7 +15,7 @@ import Data.Show (show)
 import Data.Tuple (Tuple(..))
 import Data.URL (url)
 import Data.User (User(User))
-import Data.UserStatus (UserStatus)
+import Data.UserStatus (UserStatus(..))
 import Hyper.Status (Status, statusBadRequest, statusNotFound, statusOK)
 import Prelude (bind, discard, (==), (>>=))
 import Route (Action(..))
@@ -52,11 +52,12 @@ updateUser ref id' (UpdateUserBody { face }) = do
   { users } <- readRef ref
   case
     modify'
-      (\({ user: (User { id }) }) -> show id == id')
-      (\({ user }) ->
-        { user
-        , fwt: (\f -> fwt { face: f, time }) <$> url face
-        })
+      (\(UserStatus { user: (User { id }) }) -> show id == id')
+      (\(UserStatus { user }) ->
+          UserStatus
+            { user
+            , fwt: (\f -> fwt { face: f, time }) <$> url face
+            })
       users of
     Nothing -> pure Nothing
     (Just newUsers) -> do

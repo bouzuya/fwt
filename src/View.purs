@@ -1,9 +1,8 @@
 module View (View(..)) where
 
-import Data.Argonaut (class EncodeJson, encodeJson, fromArray, fromObject, fromString, jsonNull, stringify)
+import Data.Argonaut (class EncodeJson, encodeJson, fromArray, fromObject, fromString, stringify)
 import Data.Function (($))
 import Data.Functor ((<$>))
-import Data.Maybe (maybe)
 import Data.Show (class Show)
 import Data.StrMap (fromFoldable) as StrMap
 import Data.Tuple (Tuple(..))
@@ -32,12 +31,7 @@ instance encodeJsonView :: EncodeJson View where
     [ Tuple "status" $ fromString "NotFound" ]
   encodeJson OKView = fromObject $ StrMap.fromFoldable
     [ Tuple "status" $ fromString "OK" ]
-  encodeJson (UsersView xs) = fromArray $ encodeJson' <$> xs
-    where
-      encodeJson' ({ user, fwt }) = fromObject $ StrMap.fromFoldable
-        [ Tuple "user" $ encodeJson user
-        , Tuple "fwt" $ maybe jsonNull encodeJson fwt
-        ]
+  encodeJson (UsersView xs) = fromArray $ encodeJson <$> xs
 
 indexView :: PlainHTML
 indexView = HH.html []

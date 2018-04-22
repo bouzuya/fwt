@@ -11,7 +11,7 @@ import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Now (NOW, now)
 import Control.Monad.Eff.Ref (REF, Ref, newRef)
 import Data.Either (either)
-import Data.FaceWithTime (FaceWithTime, fwt)
+import Data.FaceWithTime (fwt)
 import Data.Function (const, ($))
 import Data.Functor ((<$>))
 import Data.Maybe (Maybe(..))
@@ -22,6 +22,7 @@ import Data.URL (url)
 import Data.UUID (GENUUID, UUID, genUUID)
 import Data.User (User(User))
 import Data.UserId (userId)
+import Data.UserStatus (UserStatus(..))
 import Hyper.Conn (Conn)
 import Hyper.Middleware (Middleware, lift')
 import Hyper.Middleware.Class (getConn)
@@ -36,7 +37,7 @@ import Node.Process (PROCESS, cwd)
 import Prelude (Unit, bind, discard)
 import Route (Action, route)
 
-type State = { users :: Array { user :: User, fwt :: Maybe FaceWithTime } }
+type State = { users :: Array UserStatus }
 type Components = { ref :: Ref State }
 type RequestBody = String
 type ActionWithBody = Tuple Action RequestBody
@@ -123,7 +124,7 @@ main = do
   log $ show fwt'
   -- TODO: test route
   -- TODO: extract app handler
-  let users = [{ user: user', fwt: fwt' }]
+  let users = [UserStatus { user: user', fwt: fwt' }]
   ref <- newRef { users }
   let components = { ref }
   currentDirectory <- cwd
