@@ -1,14 +1,16 @@
 module Video
   ( MEDIA
-  , VIDEO
   , MediaStream
+  , VIDEO
   , VideoElement
+  , clearSourceObject
   , getMediaStream
   , getSourceObject
   , getVideoElementById
   , getVideoHeight
   , getVideoWidth
   , setSourceObject
+  , stopAllVideoTracks
   , videoElementToCanvasImageSource
   ) where
 
@@ -24,6 +26,9 @@ foreign import data VIDEO :: Effect
 
 foreign import data MediaStream :: Type
 foreign import data VideoElement :: Type
+
+foreign import clearSourceObject
+  :: forall e. VideoElement -> Eff (video :: VIDEO | e) Unit
 
 foreign import getMediaStream
   :: forall e. Eff ( media :: MEDIA | e ) (Promise MediaStream)
@@ -52,6 +57,9 @@ foreign import getVideoWidth
 
 foreign import setSourceObject
   :: forall e. MediaStream -> VideoElement -> Eff (video :: VIDEO | e) Unit
+
+foreign import stopAllVideoTracks
+  :: forall e. MediaStream -> Eff (video :: VIDEO | e) Unit
 
 foreign import videoElementToCanvasImageSource :: VideoElement -> CanvasImageSource
 

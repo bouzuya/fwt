@@ -1,5 +1,11 @@
 "use strict";
 
+exports.clearSourceObject = function (e) {
+  return function () {
+    e.srcObject = null;
+  };
+};
+
 exports.getVideoElementByIdImpl = function (id, Just, Nothing) {
   return function () {
     var e = document.getElementById(id);
@@ -44,6 +50,16 @@ exports.setSourceObject = function (srcObject) {
     return function () {
       e.srcObject = srcObject;
     };
+  };
+};
+
+exports.stopAllVideoTracks = function (mediaStream) {
+  return function () {
+    mediaStream
+      .getVideoTracks()
+      .forEach(function (videoTrack) {
+        videoTrack.stop();
+      });
   };
 };
 
