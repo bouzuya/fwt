@@ -2,6 +2,7 @@ module Client
   ( main
   ) where
 
+import Capture (snapshot, start, stop)
 import Control.Applicative (pure, (<$>))
 import Control.Bind (bind)
 import Control.Monad.Aff (Aff)
@@ -21,7 +22,8 @@ import Data.Semigroup ((<>))
 import Data.Unit (Unit)
 import Data.User (User(..))
 import Data.UserStatus (UserStatus(..))
-import Halogen (ClassName(..), liftEff)
+import Graphics.Canvas (CANVAS)
+import Halogen (ClassName(..), lift, liftEff)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
@@ -30,6 +32,7 @@ import Halogen.HTML.Properties as HP
 import Halogen.VDom.Driver (runUI)
 import Network.HTTP.Affjax as AX
 import Prelude (discard, not, show, ($))
+import Video (MEDIA, VIDEO)
 
 type State =
   { face :: String
@@ -44,6 +47,9 @@ type State =
 data Query a
   = LoadRequest a
   | SaveRequest a
+  | Snapshot a
+  | StartCapture a
+  | StopCapture a
   | Toggle a
   | UpdateFace String a
   | UpdateUserId String a
@@ -52,7 +58,21 @@ data Query a
 data Message = Toggled Boolean
 type Input = String
 
-button :: forall e. H.Component HH.HTML Query Input Message (Aff (ajax :: AX.AJAX | e))
+button
+  :: forall e
+  . H.Component
+      HH.HTML
+      Query
+      Input
+      Message
+      (Aff
+        ( ajax :: AX.AJAX
+        , canvas :: CANVAS
+        , media :: MEDIA
+        , video :: VIDEO
+        | e
+        )
+      )
 button =
   H.component
     { initialState
@@ -130,9 +150,45 @@ button =
         , HH.span []
           [ if state.loading then HH.text "LOADING..." else HH.text ""
           ]
+        , HH.button
+          [ HE.onClick (HE.input_ StartCapture)
+          ]
+          [ HH.text "START" ]
+        , HH.button
+          [ HE.onClick (HE.input_ Snapshot)
+          ]
+          [ HH.text "CAPTURE" ]
+        , HH.button
+          [ HE.onClick (HE.input_ StopCapture)
+          ]
+          [ HH.text "STOP" ]
+        , HH.video
+          [ HP.autoplay true
+          , HP.height 640
+          , HP.id_ "video"
+          , HP.width 640
+          ] []
+        , HH.canvas
+          [ HP.height 640
+          , HP.id_ "canvas"
+          , HP.width 640
+          ]
         ] <> usersContainer)
 
-    eval :: Query ~> H.ComponentDSL State Query Message (Aff (ajax :: AX.AJAX | e))
+    eval
+      :: Query
+      ~> H.ComponentDSL
+          State
+          Query
+          Message
+          (Aff
+            ( ajax :: AX.AJAX
+            , canvas :: CANVAS
+            , media :: MEDIA
+            , video :: VIDEO
+            | e
+            )
+          )
     eval = case _ of
       LoadRequest next -> do
         { face, userId } <- H.get
@@ -146,6 +202,15 @@ button =
         H.modify (_ { loading = true })
         response <- H.liftAff $ AX.put ("/users/" <> userId) ("{\"face\":\"" <> face <> "\"}")
         H.modify (_ { loading = false, result = Just response.response })
+        pure next
+      Snapshot next -> do
+        _ <- H.liftEff $ snapshot
+        pure next
+      StartCapture next -> do
+        _ <- lift $ start
+        pure next
+      StopCapture next -> do
+        _ <- H.liftEff $ stop
         pure next
       Toggle next -> do
         state <- H.get
@@ -165,10 +230,13 @@ button =
 
 main :: forall e. Eff ( ajax :: AX.AJAX
                       , avar :: AVAR
+                      , canvas :: CANVAS
                       , console :: CONSOLE
                       , dom :: DOM
                       , exception :: EXCEPTION
+                      , media :: MEDIA
                       , ref :: REF
+                      , video :: VIDEO
                       | e
                       )
                       Unit
