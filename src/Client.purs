@@ -31,13 +31,12 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.Driver (runUI)
 import Network.HTTP.Affjax as AX
-import Prelude (discard, not, show, ($))
+import Prelude (discard, show, ($))
 import Video (MEDIA, VIDEO)
 
 type State =
   { face :: String
   , isCapturing :: Boolean
-  , isOn :: Boolean
   , label :: String
   , loading :: Boolean
   , result :: Maybe String
@@ -51,10 +50,8 @@ data Query a
   | Snapshot a
   | StartCapture a
   | StopCapture a
-  | Toggle a
   | UpdateFace String a
   | UpdateUserId String a
-  | IsOn (Boolean -> a)
 
 data Message = Toggled Boolean
 type Input = String
@@ -86,7 +83,6 @@ button =
     initialState label =
       { face: ""
       , isCapturing: false
-      , isOn: false
       , label
       , loading: false
       , result: Nothing
@@ -97,7 +93,6 @@ button =
     render :: State -> H.ComponentHTML Query
     render state =
       let
-        label = state.label <> ":" <> if state.isOn then "On" else "Off"
         landv c l v =
           HH.div [ HP.class_ $ ClassName c ]
             [ HH.div [ HP.class_ $ ClassName "label"] [ HH.text l ]
@@ -122,12 +117,8 @@ button =
           ) <$> state.users
       in
         HH.div []
-        ([ HH.button
-          [ HP.title label
-          , HE.onClick (HE.input_ Toggle)
-          ]
-          [ HH.text label ]
-        , HH.label []
+        ([
+          HH.label []
           [ HH.span [] [ HH.text "user id" ]
           , HH.input
             [ HE.onValueChange (HE.input UpdateUserId)
@@ -223,21 +214,12 @@ button =
         _ <- H.liftEff $ stop
         H.modify (_ { isCapturing = false })
         pure next
-      Toggle next -> do
-        state <- H.get
-        let nextState = state { isOn = not state.isOn }
-        H.put nextState
-        H.raise $ Toggled nextState.isOn
-        pure next
       UpdateFace face next -> do
         H.modify (\s -> s { face = face })
         pure next
       UpdateUserId userId next -> do
         H.modify (\s -> s { userId = userId })
         pure next
-      IsOn reply -> do
-        state <- H.get
-        pure (reply state.isOn)
 
 main :: forall e. Eff ( ajax :: AX.AJAX
                       , avar :: AVAR
