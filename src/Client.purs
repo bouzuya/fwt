@@ -204,8 +204,15 @@ button =
         H.modify (_ { loading = false, result = Just response.response })
         pure next
       Snapshot next -> do
-        _ <- H.liftEff $ snapshot
-        pure next
+        dataUrl <- H.liftEff $ snapshot
+        case dataUrl of
+          Nothing -> pure next
+          (Just face) -> do
+            { userId } <- H.get
+            H.modify (_ { loading = true })
+            response <- H.liftAff $ AX.put ("/users/" <> userId) ("{\"face\":\"" <> face <> "\"}")
+            H.modify (_ { loading = false, result = Just response.response })
+            pure next
       StartCapture next -> do
         _ <- lift $ start
         H.modify (_ { isCapturing = true })
