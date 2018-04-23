@@ -153,7 +153,7 @@ button =
             , HH.button
               [ HE.onClick (HE.input_ Snapshot)
               ]
-              [ HH.text "CAPTURE" ]
+              [ HH.text "SNAPSHOT" ]
             ]
           else
             [
