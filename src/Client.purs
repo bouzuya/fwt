@@ -36,6 +36,7 @@ import Video (MEDIA, VIDEO)
 
 type State =
   { face :: String
+  , isCapturing :: Boolean
   , isOn :: Boolean
   , label :: String
   , loading :: Boolean
@@ -84,6 +85,7 @@ button =
     initialState :: Input -> State
     initialState label =
       { face: ""
+      , isCapturing: false
       , isOn: false
       , label
       , loading: false
@@ -150,18 +152,25 @@ button =
         , HH.span []
           [ if state.loading then HH.text "LOADING..." else HH.text ""
           ]
-        , HH.button
-          [ HE.onClick (HE.input_ StartCapture)
-          ]
-          [ HH.text "START" ]
-        , HH.button
-          [ HE.onClick (HE.input_ Snapshot)
-          ]
-          [ HH.text "CAPTURE" ]
-        , HH.button
-          [ HE.onClick (HE.input_ StopCapture)
-          ]
-          [ HH.text "STOP" ]
+        , HH.div [ HP.class_ $ ClassName "capture-controls"]
+          if state.isCapturing
+          then
+            [ HH.button
+              [ HE.onClick (HE.input_ StopCapture)
+              ]
+              [ HH.text "STOP" ]
+            , HH.button
+              [ HE.onClick (HE.input_ Snapshot)
+              ]
+              [ HH.text "CAPTURE" ]
+            ]
+          else
+            [
+              HH.button
+              [ HE.onClick (HE.input_ StartCapture)
+              ]
+              [ HH.text "START" ]
+            ]
         , HH.video
           [ HP.autoplay true
           , HP.height 640
@@ -208,9 +217,11 @@ button =
         pure next
       StartCapture next -> do
         _ <- lift $ start
+        H.modify (_ { isCapturing = true })
         pure next
       StopCapture next -> do
         _ <- H.liftEff $ stop
+        H.modify (_ { isCapturing = false })
         pure next
       Toggle next -> do
         state <- H.get
