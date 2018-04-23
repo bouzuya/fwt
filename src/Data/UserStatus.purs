@@ -2,11 +2,11 @@ module Data.UserStatus
   ( UserStatus(UserStatus)
   ) where
 
-import Control.Bind (bind, join, pure, (<$>), (>>=))
+import Control.Bind (bind, pure)
 import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson, fromObject, jsonNull, (.?), (.??))
 import Data.FaceWithTime (FaceWithTime)
 import Data.Function (($))
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe, maybe)
 import Data.StrMap as StrMap
 import Data.Tuple (Tuple(..))
 import Data.User (User)
