@@ -25,6 +25,14 @@ ul {
   padding: 0;
 }
 
+video {
+  transform: scaleX(-1);
+}
+
+canvas {
+  transform: scaleX(-1);
+}
+
 .user-status {
   .size(320px, 320px);
   border: 1px solid #000;
@@ -53,6 +61,7 @@ ul {
       display: none;
     }
     > .value > img {
+      transform: scaleX(-1);
       width: 100%;
     }
   }
