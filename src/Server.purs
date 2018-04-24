@@ -30,7 +30,8 @@ import Hyper.Node.FileServer (fileServer)
 import Hyper.Node.Server (HttpRequest, HttpResponse, defaultOptionsWithLogging, runServer)
 import Hyper.Request (RequestData, getRequestData, readBody)
 import Hyper.Response (ResponseEnded, StatusLineOpen, closeHeaders, respond, writeStatus)
-import Node.Buffer (BUFFER)
+import Node.Buffer (BUFFER, fromString)
+import Node.Encoding (Encoding(..))
 import Node.FS (FS)
 import Node.HTTP (HTTP)
 import Node.Process (PROCESS, cwd)
@@ -95,10 +96,11 @@ app =
   getConn
   :>>= \conn -> Tuple conn.components.ref <$> getActionWithBody
   :>>= \(Tuple ref action') -> (lift' $ liftEff $ doAction ref action')
-  :>>= \(Tuple status view) ->
+  :>>= \(Tuple status view) -> (lift' $ liftEff $ Tuple status <$> fromString (show view) UTF8)
+  :>>= \(Tuple status buf) ->
     writeStatus status
     :*> closeHeaders
-    :*> (respond $ show view)
+    :*> (respond buf)
 
 main :: forall e. Eff ( avar :: AVAR
                       , buffer :: BUFFER
