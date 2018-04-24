@@ -11,68 +11,7 @@
   height: @height;
 }
 
-@color-black: rgb(0, 0, 0);
-@color-green: rgb(78, 106, 65);
-@color-white: rgb(255, 255, 255);
-body {
-  margin: 0;
-  padding: 0;
-}
-
-ul {
-  list-style-type: none;
-  display: flex;
-  margin: 0;
-  padding: 0;
-}
-
-.capture {
-  .position(relative, auto, auto, auto, auto);
-  .size(320px, 320px);
-  overflow: hidden;
-  &:hover {
-    > canvas {
-      display: block;
-    }
-    > video {
-      display: none;
-    }
-  }
-  > .controls {
-    > .start-button {
-      .position(absolute, 0, 0, 0, 0);
-      background-color: face(@color-black, 30%);
-      z-index: 2;
-    }
-    > .stop-button {
-      .position(absolute, 0, 50%, 0, 0);
-      background-color: face(@color-green, 30%);
-      z-index: 2;
-    }
-    > .snapshot-button {
-      .position(absolute, 0, 0, 0, 50%);
-      background-color: face(@color-white, 30%);
-      z-index: 2;
-    }
-  }
-  > video {
-    .position(absolute, 0, auto, auto, 0);
-    object-fit: cover;
-    object-position: 50% 50%;
-    transform: scaleX(-1);
-  }
-  > canvas {
-    .position(absolute, 0, auto, auto, 0);
-    display: none;
-    transform: scaleX(-1);
-    width: 100%;
-  }
-}
-
-.user-status {
-  .size(320px, 320px);
-  overflow: hidden;
-  position: relative;
+.user-status() {
   > .user-id {
     display: none;
   }
@@ -82,7 +21,7 @@ ul {
     background-color: fade(@color-black, 70%);
     display: block;
     padding: 8px;
-    z-index: 1;
+    z-index: 2;
     > .label {
       display: none;
     }
@@ -104,7 +43,7 @@ ul {
     .position(absolute, auto, 0, 0, auto);
     display: block;
     padding: 8px;
-    z-index: 1;
+    z-index: 2;
     > .label {
       display: none;
     }
@@ -112,4 +51,75 @@ ul {
       color: fade(@color-white, 70%);
     }
   }
+}
+
+@color-black: rgb(0, 0, 0);
+@color-green: rgb(78, 106, 65);
+@color-white: rgb(255, 255, 255);
+body {
+  margin: 0;
+  padding: 0;
+}
+
+ul {
+  list-style-type: none;
+  display: flex;
+  margin: 0;
+  padding: 0;
+}
+
+.capture {
+  .position(relative, auto, auto, auto, auto);
+  .size(320px, 320px);
+  .user-status();
+  overflow: hidden;
+  &:hover {
+    > canvas {
+      display: block;
+    }
+    > video {
+      display: none;
+    }
+  }
+  > .controls {
+    > .start-button {
+      .position(absolute, 0, 0, 0, 0);
+      background-color: face(@color-black, 30%);
+      cursor: pointer;
+      z-index: 3;
+    }
+    > .stop-button {
+      .position(absolute, 0, 50%, 0, 0);
+      background-color: face(@color-green, 30%);
+      cursor: pointer;
+      z-index: 3;
+    }
+    > .snapshot-button {
+      .position(absolute, 0, 0, 0, 50%);
+      background-color: face(@color-white, 30%);
+      cursor: pointer;
+      z-index: 3;
+    }
+  }
+  > video {
+    .position(absolute, 0, auto, auto, 0);
+    object-fit: cover;
+    object-position: 50% 50%;
+    transform: scaleX(-1);
+    z-index: 2;
+  }
+  > canvas {
+    .position(absolute, 0, auto, auto, 0);
+    display: none;
+    transform: scaleX(-1);
+    width: 100%;
+    z-index: 2;
+  }
+}
+
+.user-status {
+  .size(320px, 320px);
+  .user-status();
+  overflow: hidden;
+  position: relative;
 }

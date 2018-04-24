@@ -13,15 +13,17 @@ import Control.Monad.Eff.Exception (EXCEPTION)
 import Control.Monad.Eff.Ref (REF)
 import DOM (DOM)
 import Data.Argonaut (decodeJson)
-import Data.Array (length)
+import Data.Array (filter, find, length)
 import Data.Either (either)
 import Data.FaceWithTime (FaceWithTime(..), toIso8601)
 import Data.Function (const, id)
 import Data.Maybe (Maybe(..), maybe)
 import Data.NaturalTransformation (type (~>))
 import Data.Semigroup ((<>))
+import Data.UUID (parseUUID)
 import Data.Unit (Unit)
 import Data.User (User(..))
+import Data.UserId (UserId(..))
 import Data.UserStatus (UserStatus(..))
 import Graphics.Canvas (CANVAS)
 import Halogen (ClassName(..), lift, liftEff)
@@ -32,7 +34,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.Driver (runUI)
 import Network.HTTP.Affjax as AX
-import Prelude (discard, show, ($))
+import Prelude (discard, eq, not, show, ($))
 import Video (MEDIA, VIDEO)
 
 type State =
@@ -100,18 +102,60 @@ button =
             [ HH.div [ HP.class_ $ ClassName "label"] [ HH.text l ]
             , HH.div [ HP.class_ $ ClassName "value"] [ HH.img [ HP.src v ] ]
             ]
-        renderUser
+        isMe (UserStatus { user }) =
+          let (User { id }) = user
+              (UserId id') = id in
+          maybe false (eq id') $ parseUUID state.userId
+        me = find isMe state.users
+        others = filter (not $ isMe) state.users
+        userStatus
           ( UserStatus
             { fwt
             , user: (User { id: userId, name: userName })
             }
           ) =
-            HH.div [ HP.class_ $ ClassName "user-status" ]
             [ landv "user-id" "UserId" $ show userId
             , landv "user-name" "UserName" $ userName
             , landimg "face" "Face" $ maybe "" (\(FaceWithTime { face }) -> show face) fwt
             , landv "time" "Time" $ maybe "" (\(FaceWithTime { time }) -> toIso8601 time) fwt
             ]
+        renderMe me =
+          HH.div
+          [ HP.classes [ ClassName "capture" ] ] $
+          [ HH.div [ HP.classes [ ClassName "controls" ] ]
+            if state.isCapturing
+            then
+              [ HH.div
+                [ HP.classes [ ClassName "stop-button" ]
+                , HE.onClick (HE.input_ StopCapture)
+                ]
+                [ HH.text "STOP" ]
+              , HH.div
+                [ HP.classes [ ClassName "snapshot-button" ]
+                , HE.onClick (HE.input_ Snapshot)
+                ]
+                [ HH.text "SNAPSHOT" ]
+              ]
+            else
+              [
+                HH.div
+                [ HP.classes [ ClassName "start-button" ]
+                , HE.onClick (HE.input_ StartCapture)
+                ]
+                [ HH.text "START" ]
+              ]
+          , HH.video
+            [ HP.autoplay true
+            , HP.height 320
+            , HP.id_ "video"
+            , HP.width 320
+            ] []
+          , HH.canvas
+            [ HP.height 640
+            , HP.id_ "canvas"
+            , HP.width 640
+            ]
+          ] <> (maybe [] userStatus me)
       in
         HH.div []
         [
@@ -131,45 +175,14 @@ button =
           ]
         , HH.span [] [ HH.text $ show $ length state.users]
         , HH.ul [] $
-          [ HH.li []
-            [ HH.div
-              [ HP.classes [ ClassName "capture" ] ]
-              [ HH.div [ HP.classes [ ClassName "controls" ] ]
-                if state.isCapturing
-                then
-                  [ HH.div
-                    [ HP.classes [ ClassName "stop-button" ]
-                    , HE.onClick (HE.input_ StopCapture)
-                    ]
-                    [ HH.text "STOP" ]
-                  , HH.div
-                    [ HP.classes [ ClassName "snapshot-button" ]
-                    , HE.onClick (HE.input_ Snapshot)
-                    ]
-                    [ HH.text "SNAPSHOT" ]
-                  ]
-                else
-                  [
-                    HH.div
-                    [ HP.classes [ ClassName "start-button" ]
-                    , HE.onClick (HE.input_ StartCapture)
-                    ]
-                    [ HH.text "START" ]
-                  ]
-              , HH.video
-                [ HP.autoplay true
-                , HP.height 320
-                , HP.id_ "video"
-                , HP.width 320
-                ] []
-              , HH.canvas
-                [ HP.height 640
-                , HP.id_ "canvas"
-                , HP.width 640
-                ]
+          [ HH.li [] [ renderMe me ]
+          ] <>
+          ( (\user ->
+              HH.li []
+              [ HH.div [ HP.class_ $ ClassName "user-status" ] (userStatus user)
               ]
-            ]
-          ] <> ((\user -> HH.li [] [renderUser user]) <$> state.users)
+            ) <$> others
+          )
         ]
 
     eval

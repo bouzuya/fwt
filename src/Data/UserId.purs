@@ -1,4 +1,4 @@
-module Data.UserId (UserId, userId) where
+module Data.UserId (UserId(..), userId) where
 
 import Control.Applicative (pure)
 import Control.Bind (bind)
