@@ -150,16 +150,18 @@ button =
             ]
         , HH.span [] [ HH.text $ show $ length state.users]
         , HH.ul [] $ (\user -> HH.li [] [renderUser user]) <$> state.users
-        , HH.video
-          [ HP.autoplay true
-          , HP.height 640
-          , HP.id_ "video"
-          , HP.width 640
-          ] []
-        , HH.canvas
-          [ HP.height 640
-          , HP.id_ "canvas"
-          , HP.width 640
+        , HH.div [ HP.class_ $ ClassName "capture"]
+          [ HH.video
+            [ HP.autoplay true
+            , HP.height 320
+            , HP.id_ "video"
+            , HP.width 320
+            ] []
+          , HH.canvas
+            [ HP.height 640
+            , HP.id_ "canvas"
+            , HP.width 640
+            ]
           ]
         ]
 

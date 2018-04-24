@@ -25,12 +25,30 @@ ul {
   padding: 0;
 }
 
-video {
-  transform: scaleX(-1);
-}
-
-canvas {
-  transform: scaleX(-1);
+.capture {
+  .position(relative, auto, auto, auto, auto);
+  .size(320px, 320px);
+  overflow: hidden;
+  &:hover {
+    > canvas {
+      display: block;
+    }
+    > video {
+      display: none;
+    }
+  }
+  > video {
+    .position(absolute, 0, auto, auto, 0);
+    object-fit: cover;
+    object-position: 50% 50%;
+    transform: scaleX(-1);
+  }
+  > canvas {
+    .position(absolute, 0, auto, auto, 0);
+    display: none;
+    transform: scaleX(-1);
+    width: 100%;
+  }
 }
 
 .user-status {
