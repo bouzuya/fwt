@@ -3,7 +3,7 @@ module Data.UserStatus
   ) where
 
 import Control.Bind (bind, pure)
-import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson, fromObject, getField, getFieldOptional, jsonNull, (.?), (.??))
+import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson, fromObject, jsonNull, (.?))
 import Data.FaceWithTime (FaceWithTime)
 import Data.Function (($))
 import Data.Maybe (Maybe, maybe)

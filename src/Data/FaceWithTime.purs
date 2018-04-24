@@ -1,7 +1,7 @@
-module Data.FaceWithTime (FaceWithTime(..), fwt) where
+module Data.FaceWithTime (FaceWithTime(..), fwt, toIso8601) where
 
 import Control.Bind (bind, pure, (<$>), (>>=))
-import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson, fromObject, fromString, (.?))
+import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson, fromObject, fromString, stringify, (.?))
 import Data.DateTime.Instant (Instant, fromDateTime, toDateTime)
 import Data.Either (Either)
 import Data.Formatter.DateTime (FormatterCommand(..), format)
@@ -10,7 +10,7 @@ import Data.Formatter.Parser.Utils (runP)
 import Data.Function (($))
 import Data.List (fromFoldable)
 import Data.Semigroup ((<>))
-import Data.Show (class Show, show)
+import Data.Show (class Show)
 import Data.StrMap (fromFoldable) as StrMap
 import Data.Tuple (Tuple(..))
 import Data.URL (URL)
@@ -32,11 +32,7 @@ instance encodeJsonFaceWithTime :: EncodeJson FaceWithTime where
       ]
 
 instance showFaceWithTime :: Show FaceWithTime where
-  show (FaceWithTime { face, time }) =
-    "FaceWithTime" <>
-    " { face: \"" <> show face <> "\"" <>
-    " , time: \"" <> toIso8601 time <> "\"" <>
-    " }"
+  show fwt = stringify $ encodeJson fwt
 
 fromString' :: String -> Either String Instant
 fromString' s = fromDateTime <$> runP parseDateTime s
