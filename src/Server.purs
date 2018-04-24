@@ -116,8 +116,10 @@ main :: forall e. Eff ( avar :: AVAR
                       Unit
 main = do
   -- TODO: test data
-  user' <- newUser "bouzuya" <$> genUUID
-  log $ show $ user'
+  bouzuya <- newUser "bouzuya" <$> genUUID
+  log $ show $ bouzuya
+  emanon001 <- newUser "emanon001" <$> genUUID
+  log $ show $ emanon001
   instant' <- now
   let fwt' = do
         face <- url "https://bouzuya.net/images/bouzuya-icon-v3.png"
@@ -126,7 +128,10 @@ main = do
   log $ show fwt'
   -- TODO: test route
   -- TODO: extract app handler
-  let users = [UserStatus { user: user', fwt: fwt' }]
+  let users =
+        [ UserStatus { user: bouzuya, fwt: fwt' }
+        , UserStatus { user: emanon001, fwt: Nothing }
+        ]
   ref <- newRef { users }
   let components = { ref }
   currentDirectory <- cwd

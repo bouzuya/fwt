@@ -13,6 +13,7 @@ import Control.Monad.Eff.Exception (EXCEPTION)
 import Control.Monad.Eff.Ref (REF)
 import DOM (DOM)
 import Data.Argonaut (decodeJson)
+import Data.Array (length)
 import Data.Either (either)
 import Data.FaceWithTime (FaceWithTime(..))
 import Data.Function (const, id)
@@ -99,21 +100,21 @@ button =
             [ HH.div [ HP.class_ $ ClassName "label"] [ HH.text l ]
             , HH.div [ HP.class_ $ ClassName "value"] [ HH.img [ HP.src v ] ]
             ]
-        usersContainer =
-          (\(UserStatus
-              { fwt
-              , user: (User { id: userId, name: userName })
-              }) ->
-              HH.div [ HP.class_ $ ClassName "user-status" ]
-              [ landv "user-id" "UserId" $ show userId
-              , landv "user-name" "UserName" $ userName
-              , landimg "face" "Face" $ maybe "" (\(FaceWithTime { face }) -> show face) fwt
-              , landv "time" "Time" $ maybe "" (\(FaceWithTime { time }) -> show time) fwt
-              ]
-          ) <$> state.users
+        renderUser
+          ( UserStatus
+            { fwt
+            , user: (User { id: userId, name: userName })
+            }
+          ) =
+            HH.div [ HP.class_ $ ClassName "user-status" ]
+            [ landv "user-id" "UserId" $ show userId
+            , landv "user-name" "UserName" $ userName
+            , landimg "face" "Face" $ maybe "" (\(FaceWithTime { face }) -> show face) fwt
+            , landv "time" "Time" $ maybe "" (\(FaceWithTime { time }) -> show time) fwt
+            ]
       in
         HH.div []
-        ([
+        [
           HH.label []
           [ HH.span [] [ HH.text "user id" ]
           , HH.input
@@ -147,6 +148,8 @@ button =
               ]
               [ HH.text "START" ]
             ]
+        , HH.span [] [ HH.text $ show $ length state.users]
+        , HH.ul [] $ (\user -> HH.li [] [renderUser user]) <$> state.users
         , HH.video
           [ HP.autoplay true
           , HP.height 640
@@ -158,7 +161,7 @@ button =
           , HP.id_ "canvas"
           , HP.width 640
           ]
-        ] <> usersContainer)
+        ]
 
     eval
       :: Query

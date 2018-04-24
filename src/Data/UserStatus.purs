@@ -3,7 +3,7 @@ module Data.UserStatus
   ) where
 
 import Control.Bind (bind, pure)
-import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson, fromObject, jsonNull, (.?), (.??))
+import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson, fromObject, getField, getFieldOptional, jsonNull, (.?), (.??))
 import Data.FaceWithTime (FaceWithTime)
 import Data.Function (($))
 import Data.Maybe (Maybe, maybe)
@@ -20,7 +20,7 @@ instance decodeJsonUserStatus :: DecodeJson UserStatus where
   decodeJson json = do
     o <- decodeJson json
     user <- o .? "user"
-    fwt <- o .?? "fwt"
+    fwt <- o .? "fwt"
     pure $ UserStatus { user, fwt }
 
 instance encodeJsonUserStatus :: EncodeJson UserStatus where
