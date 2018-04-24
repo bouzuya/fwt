@@ -35,8 +35,7 @@ import Prelude (discard, show, ($))
 import Video (MEDIA, VIDEO)
 
 type State =
-  { face :: String
-  , isCapturing :: Boolean
+  { isCapturing :: Boolean
   , label :: String
   , loading :: Boolean
   , result :: Maybe String
@@ -46,11 +45,9 @@ type State =
 
 data Query a
   = LoadRequest a
-  | SaveRequest a
   | Snapshot a
   | StartCapture a
   | StopCapture a
-  | UpdateFace String a
   | UpdateUserId String a
 
 data Message = Toggled Boolean
@@ -81,8 +78,7 @@ button =
   where
     initialState :: Input -> State
     initialState label =
-      { face: ""
-      , isCapturing: false
+      { isCapturing: false
       , label
       , loading: false
       , result: Nothing
@@ -125,21 +121,10 @@ button =
             , HP.value state.userId
             ]
           ]
-        , HH.label []
-          [ HH.span [] [ HH.text "face" ]
-          , HH.input
-            [ HE.onValueChange (HE.input UpdateFace)
-            , HP.value state.face
-            ]
-          ]
         , HH.button
           [ HE.onClick (HE.input_ LoadRequest)
           ]
           [ HH.text "LOAD" ]
-        , HH.button
-          [ HE.onClick (HE.input_ SaveRequest)
-          ]
-          [ HH.text "SAVE" ]
         , HH.span []
           [ if state.loading then HH.text "LOADING..." else HH.text ""
           ]
@@ -191,17 +176,11 @@ button =
           )
     eval = case _ of
       LoadRequest next -> do
-        { face, userId } <- H.get
+        { userId } <- H.get
         H.modify (_ { loading = true })
         response <- H.liftAff $ AX.get "/users"
         let users = either (const []) id $ decodeJson response.response
         H.modify (_ { loading = false, users = users })
-        pure next
-      SaveRequest next -> do
-        { face, userId } <- H.get
-        H.modify (_ { loading = true })
-        response <- H.liftAff $ AX.put ("/users/" <> userId) ("{\"face\":\"" <> face <> "\"}")
-        H.modify (_ { loading = false, result = Just response.response })
         pure next
       Snapshot next -> do
         dataUrl <- H.liftEff $ snapshot
@@ -220,9 +199,6 @@ button =
       StopCapture next -> do
         _ <- H.liftEff $ stop
         H.modify (_ { isCapturing = false })
-        pure next
-      UpdateFace face next -> do
-        H.modify (\s -> s { face = face })
         pure next
       UpdateUserId userId next -> do
         H.modify (\s -> s { userId = userId })
