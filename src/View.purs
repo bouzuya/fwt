@@ -11,6 +11,7 @@ import Halogen.HTML (HTML(..), PlainHTML)
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.DOM.StringRenderer (render)
+import View.UserStatusView (UserStatusView(..))
 
 data View
   = BadRequestView
@@ -31,7 +32,7 @@ instance encodeJsonView :: EncodeJson View where
     [ Tuple "status" $ fromString "NotFound" ]
   encodeJson OKView = fromObject $ StrMap.fromFoldable
     [ Tuple "status" $ fromString "OK" ]
-  encodeJson (UsersView xs) = fromArray $ encodeJson <$> xs
+  encodeJson (UsersView xs) = fromArray $ encodeJson <$> UserStatusView <$> xs
 
 indexView :: PlainHTML
 indexView = HH.html []
