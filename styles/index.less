@@ -12,6 +12,7 @@
 }
 
 @color-black: rgb(0, 0, 0);
+@color-green: rgb(78, 106, 65);
 @color-white: rgb(255, 255, 255);
 body {
   margin: 0;
@@ -35,6 +36,23 @@ ul {
     }
     > video {
       display: none;
+    }
+  }
+  > .controls {
+    > .start-button {
+      .position(absolute, 0, 0, 0, 0);
+      background-color: face(@color-black, 30%);
+      z-index: 2;
+    }
+    > .stop-button {
+      .position(absolute, 0, 50%, 0, 0);
+      background-color: face(@color-green, 30%);
+      z-index: 2;
+    }
+    > .snapshot-button {
+      .position(absolute, 0, 0, 0, 50%);
+      background-color: face(@color-white, 30%);
+      z-index: 2;
     }
   }
   > video {

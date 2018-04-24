@@ -129,31 +129,34 @@ button =
         , HH.span []
           [ if state.loading then HH.text "LOADING..." else HH.text ""
           ]
-        , HH.div [ HP.class_ $ ClassName "capture-controls"]
-          if state.isCapturing
-          then
-            [ HH.button
-              [ HE.onClick (HE.input_ StopCapture)
-              ]
-              [ HH.text "STOP" ]
-            , HH.button
-              [ HE.onClick (HE.input_ Snapshot)
-              ]
-              [ HH.text "SNAPSHOT" ]
-            ]
-          else
-            [
-              HH.button
-              [ HE.onClick (HE.input_ StartCapture)
-              ]
-              [ HH.text "START" ]
-            ]
         , HH.span [] [ HH.text $ show $ length state.users]
         , HH.ul [] $
           [ HH.li []
             [ HH.div
               [ HP.classes [ ClassName "capture" ] ]
-              [ HH.video
+              [ HH.div [ HP.classes [ ClassName "controls" ] ]
+                if state.isCapturing
+                then
+                  [ HH.div
+                    [ HP.classes [ ClassName "stop-button" ]
+                    , HE.onClick (HE.input_ StopCapture)
+                    ]
+                    [ HH.text "STOP" ]
+                  , HH.div
+                    [ HP.classes [ ClassName "snapshot-button" ]
+                    , HE.onClick (HE.input_ Snapshot)
+                    ]
+                    [ HH.text "SNAPSHOT" ]
+                  ]
+                else
+                  [
+                    HH.div
+                    [ HP.classes [ ClassName "start-button" ]
+                    , HE.onClick (HE.input_ StartCapture)
+                    ]
+                    [ HH.text "START" ]
+                  ]
+              , HH.video
                 [ HP.autoplay true
                 , HP.height 320
                 , HP.id_ "video"
