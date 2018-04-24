@@ -75,10 +75,10 @@ ul {
   overflow: hidden;
   &:hover {
     > canvas {
-      display: block;
+      display: none;
     }
     > video {
-      display: none;
+      display: block;
     }
   }
   > .controls {
@@ -103,6 +103,7 @@ ul {
   }
   > video {
     .position(absolute, 0, auto, auto, 0);
+    display: none;
     object-fit: cover;
     object-position: 50% 50%;
     transform: scaleX(-1);
@@ -110,7 +111,7 @@ ul {
   }
   > canvas {
     .position(absolute, 0, auto, auto, 0);
-    display: none;
+    display: block;
     transform: scaleX(-1);
     width: 100%;
     z-index: 2;
