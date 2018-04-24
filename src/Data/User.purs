@@ -2,29 +2,34 @@ module Data.User (User(User)) where
 
 import Control.Applicative (pure)
 import Control.Bind (bind)
-import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson, fromObject, fromString, (.?))
+import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson, fromObject, fromString, stringify, (.?))
 import Data.Function (($))
-import Data.Semigroup ((<>))
-import Data.Show (class Show, show)
+import Data.Show (class Show)
 import Data.StrMap (fromFoldable) as StrMap
 import Data.Tuple (Tuple(..))
 import Data.UserId (UserId)
 
-newtype User = User { id :: UserId, name :: String }
+newtype User =
+  User
+  { id :: UserId
+  , name :: String
+  , password :: String
+  }
 
-instance decodeJson :: DecodeJson User where
+instance decodeJsonUser :: DecodeJson User where
   decodeJson json = do
     o <- decodeJson json
     id <- o .? "id"
     name <- o .? "name"
-    pure $ User { id, name }
+    password <- o .? "password"
+    pure $ User { id, name, password }
 
-instance encodeJson :: EncodeJson User where
-  encodeJson (User { id, name }) = fromObject $ StrMap.fromFoldable
+instance encodeJsonUser :: EncodeJson User where
+  encodeJson (User { id, name, password }) = fromObject $ StrMap.fromFoldable
     [ Tuple "id" $ encodeJson id
     , Tuple "name" $ fromString name
+    , Tuple "password" $ fromString password
     ]
 
 instance showUser :: Show User where
-  show (User { id, name }) =
-    "User { id: \"" <> show id <> "\", name: \"" <> name <> "\" }"
+  show user = stringify $ encodeJson user

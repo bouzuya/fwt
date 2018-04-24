@@ -43,9 +43,6 @@ type Components = { ref :: Ref State }
 type RequestBody = String
 type ActionWithBody = Tuple Action RequestBody
 
-newUser :: String -> UUID -> User
-newUser name uuid = User { id: userId uuid, name }
-
 getRequestData'
   :: forall e res c
   . Middleware
@@ -116,10 +113,12 @@ main :: forall e. Eff ( avar :: AVAR
                       Unit
 main = do
   -- TODO: test data
-  bouzuya <- newUser "bouzuya" <$> genUUID
-  log $ show $ bouzuya
-  emanon001 <- newUser "emanon001" <$> genUUID
-  log $ show $ emanon001
+  user1 <- User <$> ({ id: _, name: "user1", password: "pass1" }) <$> (userId <$> genUUID)
+  user2 <- User <$> ({ id: _, name: "user2", password: "pass2" }) <$> (userId <$> genUUID)
+  user3 <- User <$> ({ id: _, name: "user3", password: "pass3" }) <$> (userId <$> genUUID)
+  log $ show $ user1
+  log $ show $ user2
+  log $ show $ user3
   instant' <- now
   let fwt' = do
         face <- url "https://bouzuya.net/images/bouzuya-icon-v3.png"
@@ -129,8 +128,8 @@ main = do
   -- TODO: test route
   -- TODO: extract app handler
   let users =
-        [ UserStatus { user: bouzuya, fwt: fwt' }
-        , UserStatus { user: emanon001, fwt: Nothing }
+        [ UserStatus { user: user1, fwt: fwt' }
+        , UserStatus { user: user2, fwt: Nothing }
         ]
   ref <- newRef { users }
   let components = { ref }
