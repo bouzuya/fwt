@@ -1,0 +1,65 @@
+.position(@position, @top, @right, @bottom, @left) {
+  position: @position;
+  top: @top;
+  right: @right;
+  bottom: @bottom;
+  left: @left;
+}
+
+.size(@width, @height) {
+  width: @width;
+  height: @height;
+}
+
+@color-black: rgb(0, 0, 0);
+@color-white: rgb(255, 255, 255);
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.user-status {
+  .size(320px, 320px);
+  border: 1px solid #000;
+  overflow: hidden;
+  position: relative;
+  > .user-id {
+    display: none;
+  }
+  > .user-name {
+    .position(absolute, auto, auto, 0, 0);
+    .size(100%, auto);
+    background-color: fade(@color-black, 70%);
+    display: block;
+    padding: 8px;
+    z-index: 1;
+    > .label {
+      display: none;
+    }
+    > .value {
+      color: fade(@color-white, 70%);
+    }
+  }
+  > .face {
+    .position(absolute, 0, auto, auto, 0);
+    > .label {
+      display: none;
+    }
+    > .value > img {
+      width: 100%;
+    }
+  }
+  > .time {
+    .position(absolute, auto, auto, 0, 0);
+    display: block;
+    padding: 8px;
+    z-index: 1;
+    > .label {
+      display: none;
+    }
+    > .value {
+      color: fade(@color-white, 70%);
+    }
+  }
+}

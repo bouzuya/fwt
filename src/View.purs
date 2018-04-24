@@ -38,6 +38,10 @@ indexView = HH.html []
   [ HH.head []
     [ HH.meta [ HP.charset "UTF-8" ]
     , HH.title [] [ HH.text "fwt" ]
+    , HH.link
+      [ HP.href "/styles/index.css"
+      , HP.rel "stylesheet"
+      ]
     ]
   , HH.body []
     [ HH.div []

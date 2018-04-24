@@ -104,7 +104,7 @@ button =
               { fwt
               , user: (User { id: userId, name: userName })
               }) ->
-              HH.div []
+              HH.div [ HP.class_ $ ClassName "user-status" ]
               [ landv "user-id" "UserId" $ show userId
               , landv "user-name" "UserName" $ userName
               , landimg "face" "Face" $ maybe "" (\(FaceWithTime { face }) -> show face) fwt

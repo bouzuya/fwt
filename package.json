@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "bower": "^1.8.4",
+    "less": "^3.0.2",
     "npm-run-all": "^4.1.2",
     "pulp": "^12.0.1",
     "purescript": "^0.11.7",
@@ -33,7 +34,9 @@
   "scripts": {
     "bower:install": "bower install",
     "build": "npm-run-all -s build:client build:server",
-    "build:client": "pulp browserify --main Client --optimise --to public/scripts/index.js",
+    "build:client": "npm-run-all -p 'build:client:*'",
+    "build:client:scripts": "pulp browserify --main Client --optimise --to public/scripts/index.js",
+    "build:client:styles": "lessc styles/index.less public/styles/index.css",
     "build:server": "pulp build --main Server --optimise",
     "clean": "rimraf .pulp-cache output",
     "prepare": "npm-run-all -s bower:install clean build",
