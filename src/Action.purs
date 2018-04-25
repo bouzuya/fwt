@@ -70,7 +70,7 @@ doAction
   -> Eff ( now :: NOW, ref :: REF | e ) (Tuple Status View)
 doAction _ (Just (Tuple GetIndex _)) = do
   pure $ Tuple statusOK IndexView
-doAction ref (Just (Tuple GetUsers _)) = do
+doAction ref (Just (Tuple (GetUsers _) _)) = do
   users <- getUsers ref
   pure $ Tuple statusOK (UsersView users)
 doAction ref (Just (Tuple (UpdateUser id') body)) = do
