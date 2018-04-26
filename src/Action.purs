@@ -11,13 +11,10 @@ import Data.FaceWithTime (fwt)
 import Data.Foldable (find)
 import Data.Function (($))
 import Data.Functor ((<$>))
-import Data.List as L
-import Data.Map as M
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.Show (show)
-import Data.Tuple (Tuple(..), snd)
+import Data.Tuple (Tuple(..), fst, snd)
 import Data.URL (url)
-import Data.UUID (UUID)
 import Data.User (User(User))
 import Data.UserId (UserId(..))
 import Data.UserStatus (UserStatus(..))
@@ -71,11 +68,11 @@ updateUser ref id' (UpdateUserBody { face }) = do
 
 doAction
   :: forall e. Ref State
-  -> Maybe (Tuple Action String)
+  -> Maybe { action :: Action, body :: String, query :: Array (Tuple String (Maybe String)) }
   -> Eff ( now :: NOW, ref :: REF | e ) (Tuple Status View)
-doAction _ (Just (Tuple GetIndex _)) = do
+doAction _ (Just { action: GetIndex }) = do
   pure $ Tuple statusOK IndexView
-doAction ref (Just (Tuple (GetUsers query) _)) = do
+doAction ref (Just { action: GetUsers, query }) = do
   case credentials of
     Nothing -> pure $ Tuple statusForbidden ForbiddenView
     (Just c) -> do
@@ -94,11 +91,11 @@ doAction ref (Just (Tuple (GetUsers query) _)) = do
   where
     credentials :: Maybe { password :: String, userId :: String }
     credentials = do
-      let kvs = M.keys query `L.zip` M.values query
-      password <- snd <$> find (\(Tuple k _) -> k == "password") kvs
-      userId <- snd <$> find (\(Tuple k _) -> k == "user_id") kvs
+      let lookup k a = maybe Nothing snd $ find (\t -> fst t == k) a
+      password <- lookup "password" query
+      userId <- lookup "user_id" query
       pure { password, userId }
-doAction ref (Just (Tuple (UpdateUser id') body)) = do
+doAction ref (Just { action: (UpdateUser id'), body }) = do
   case (jsonParser body >>= decodeJson) :: Either String UpdateUserBody of
     Left _ -> pure $ Tuple statusBadRequest BadRequestView
     Right body' -> do

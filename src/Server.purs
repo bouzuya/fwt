@@ -12,7 +12,7 @@ import Control.Monad.Eff.Now (NOW, now)
 import Control.Monad.Eff.Ref (REF, Ref, newRef)
 import Data.Either (either)
 import Data.FaceWithTime (fwt)
-import Data.Function (const, ($))
+import Data.Function (const, id, ($))
 import Data.Functor ((<$>))
 import Data.Maybe (Maybe(..))
 import Data.Semigroup ((<>))
@@ -28,7 +28,7 @@ import Hyper.Middleware (Middleware, lift')
 import Hyper.Middleware.Class (getConn)
 import Hyper.Node.FileServer (fileServer)
 import Hyper.Node.Server (HttpRequest, HttpResponse, defaultOptionsWithLogging, runServer)
-import Hyper.Request (RequestData, getRequestData, readBody)
+import Hyper.Request (RequestData, getRequestData, parseUrl, readBody)
 import Hyper.Response (ResponseEnded, StatusLineOpen, closeHeaders, respond, writeStatus)
 import Node.Buffer (BUFFER, fromString)
 import Node.Encoding (Encoding(..))
@@ -41,7 +41,11 @@ import Route (Action, route)
 type State = { users :: Array UserStatus }
 type Components = { ref :: Ref State }
 type RequestBody = String
-type ActionWithBody = Tuple Action RequestBody
+type ActionWithBody =
+  { action :: Action
+  , body ::  RequestBody
+  , query :: Array (Tuple String (Maybe String))
+  }
 
 getRequestData'
   :: forall e res c
@@ -59,9 +63,11 @@ getRequestData' = getRequestData :>>= \request -> Tuple request <$> readBody
 actionWithBody :: (Tuple RequestData RequestBody) -> Maybe ActionWithBody
 actionWithBody (Tuple request body) = do
   method <- either Just (const Nothing) request.method
-  path <- pure $ request.url
+  let parsedUrl = parseUrl request.url
+  path <- pure $ parsedUrl.path
+  query <- pure $ either (const []) id $ parsedUrl.query
   action <- route method path
-  pure $ Tuple action body
+  pure { action, body, query }
 
 getActionWithBody
   :: forall e res c
