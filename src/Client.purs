@@ -20,6 +20,8 @@ import Data.Function (const, id)
 import Data.Maybe (Maybe(..), maybe)
 import Data.NaturalTransformation (type (~>))
 import Data.Semigroup ((<>))
+import Data.Tuple (Tuple(..))
+import Data.URL (URL(..), urlWithQuery)
 import Data.UUID (parseUUID)
 import Data.Unit (Unit)
 import Data.User (User(..))
@@ -41,6 +43,7 @@ type State =
   { isCapturing :: Boolean
   , label :: String
   , loading :: Boolean
+  , password :: String
   , result :: Maybe String
   , userId :: String
   , users :: Array UserStatus
@@ -51,6 +54,7 @@ data Query a
   | Snapshot a
   | StartCapture a
   | StopCapture a
+  | UpdatePassword String a
   | UpdateUserId String a
 
 data Message = Toggled Boolean
@@ -84,8 +88,9 @@ button =
       { isCapturing: false
       , label
       , loading: false
+      , password: "pass1"
       , result: Nothing
-      , userId: "bouzuya"
+      , userId: "user1"
       , users: []
       }
 
@@ -158,12 +163,20 @@ button =
           ] <> (maybe [] userStatus me)
       in
         HH.div []
-        [
-          HH.label []
+        [ HH.label []
           [ HH.span [] [ HH.text "user id" ]
           , HH.input
             [ HE.onValueChange (HE.input UpdateUserId)
+            , HP.type_ HP.InputText
             , HP.value state.userId
+            ]
+          ]
+        , HH.label []
+          [ HH.span [] [ HH.text "password" ]
+          , HH.input
+            [ HE.onValueChange (HE.input UpdatePassword)
+            , HP.type_ HP.InputPassword
+            , HP.value state.password
             ]
           ]
         , HH.button
@@ -201,12 +214,20 @@ button =
           )
     eval = case _ of
       LoadRequest next -> do
-        { userId } <- H.get
+        { password, userId } <- H.get
         H.modify (_ { loading = true })
-        response <- H.liftAff $ AX.get "/users"
-        let users = either (const []) id $ decodeJson response.response
-        H.modify (_ { loading = false, users = users })
-        pure next
+        let params =
+              [ Tuple "password" $ Just password
+              , Tuple "user_id" $ Just userId
+              ]
+            urlMaybe = urlWithQuery "/users" params
+        case urlMaybe of
+          Nothing -> pure next
+          (Just (URL url)) -> do
+            response <- H.liftAff $ AX.get url
+            let users = either (const []) id $ decodeJson response.response
+            H.modify (_ { loading = false, users = users })
+            pure next
       Snapshot next -> do
         dataUrl <- H.liftEff $ snapshot
         case dataUrl of
@@ -224,6 +245,9 @@ button =
       StopCapture next -> do
         _ <- H.liftEff $ stop
         H.modify (_ { isCapturing = false })
+        pure next
+      UpdatePassword password next -> do
+        H.modify (\s -> s { password = password })
         pure next
       UpdateUserId userId next -> do
         H.modify (\s -> s { userId = userId })
