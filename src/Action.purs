@@ -24,6 +24,9 @@ import Route (Action(..))
 import View (View(..))
 
 type State = { users :: Array UserStatus }
+type Query = Array (Tuple String (Maybe String))
+type Body = String
+type ActionWithParams = { action :: Action, body :: Body, query :: Query }
 newtype UpdateUserBody
   = UpdateUserBody { face :: String }
 
@@ -66,13 +69,14 @@ updateUser ref id' (UpdateUserBody { face }) = do
       modifyRef ref (\_ -> { users: newUsers })
       pure $ Just newUsers
 
-doAction
+handleGetIndexAction :: forall e. Eff e (Tuple Status View)
+handleGetIndexAction = pure $ Tuple statusOK IndexView
+
+handleGetUsersAction
   :: forall e. Ref State
-  -> Maybe { action :: Action, body :: String, query :: Array (Tuple String (Maybe String)) }
-  -> Eff ( now :: NOW, ref :: REF | e ) (Tuple Status View)
-doAction _ (Just { action: GetIndex }) = do
-  pure $ Tuple statusOK IndexView
-doAction ref (Just { action: GetUsers, query }) = do
+  -> Query
+  -> Eff ( ref :: REF | e ) (Tuple Status View)
+handleGetUsersAction ref query = do
   case credentials of
     Nothing -> pure $ Tuple statusForbidden ForbiddenView
     (Just c) -> do
@@ -95,7 +99,13 @@ doAction ref (Just { action: GetUsers, query }) = do
       password <- lookup "password" query
       userId <- lookup "user_id" query
       pure { password, userId }
-doAction ref (Just { action: (UpdateUser id'), body }) = do
+
+handleUpdateUserAction
+  :: forall e. Ref State
+  -> String
+  -> Body
+  -> Eff ( now :: NOW, ref :: REF | e ) (Tuple Status View)
+handleUpdateUserAction ref id' body = do
   case (jsonParser body >>= decodeJson) :: Either String UpdateUserBody of
     Left _ -> pure $ Tuple statusBadRequest BadRequestView
     Right body' -> do
@@ -103,5 +113,19 @@ doAction ref (Just { action: (UpdateUser id'), body }) = do
       pure $ case result of
         Nothing -> Tuple statusNotFound NotFoundView
         (Just _) -> Tuple statusOK OKView
-doAction _ _ = do
-  pure $ Tuple statusNotFound ErrorView
+
+handleDefaultAction :: forall e. Eff e (Tuple Status View)
+handleDefaultAction = pure $ Tuple statusNotFound ErrorView
+
+doAction
+  :: forall e. Ref State
+  -> Maybe ActionWithParams
+  -> Eff ( now :: NOW, ref :: REF | e ) (Tuple Status View)
+doAction _ (Just { action: GetIndex }) =
+  handleGetIndexAction
+doAction ref (Just { action: GetUsers, query }) =
+  handleGetUsersAction ref query
+doAction ref (Just { action: (UpdateUser id'), body }) =
+  handleUpdateUserAction ref id' body
+doAction _ _ =
+  handleDefaultAction
