@@ -114,6 +114,18 @@ handleUpdateUserAction ref id' body = do
         Nothing -> Tuple statusNotFound NotFoundView
         (Just _) -> Tuple statusOK OKView
 
+handleGetFacesAction
+  :: forall e. Ref State
+  -> Query
+  -> Eff ( ref :: REF | e ) (Tuple Status View)
+handleGetFacesAction _ _ = pure $ Tuple statusNotFound ErrorView
+
+handleCreateFaceAction
+  :: forall e. Ref State
+  -> Body
+  -> Eff ( ref :: REF | e ) (Tuple Status View)
+handleCreateFaceAction _ _ = pure $ Tuple statusNotFound ErrorView
+
 handleDefaultAction :: forall e. Eff e (Tuple Status View)
 handleDefaultAction = pure $ Tuple statusNotFound ErrorView
 
@@ -127,5 +139,9 @@ doAction ref (Just { action: GetUsers, query }) =
   handleGetUsersAction ref query
 doAction ref (Just { action: (UpdateUser id'), body }) =
   handleUpdateUserAction ref id' body
+doAction ref (Just { action: GetFaces, query }) =
+  handleGetFacesAction ref query
+doAction ref (Just { action: CreateFace, body }) =
+  handleCreateFaceAction ref body
 doAction _ _ =
   handleDefaultAction
