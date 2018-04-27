@@ -9,7 +9,7 @@ import Data.Array (findIndex, modifyAt)
 import Data.Either (Either(..))
 import Data.FaceWithTime (fwt)
 import Data.Foldable (find)
-import Data.Function (($))
+import Data.Function (flip, ($))
 import Data.Functor ((<$>))
 import Data.Maybe (Maybe(..), maybe)
 import Data.Show (show)
@@ -27,6 +27,7 @@ type State = { users :: Array UserStatus }
 type Query = Array (Tuple String (Maybe String))
 type Body = String
 type ActionWithParams = { action :: Action, body :: Body, query :: Query }
+type Credentials = { password :: String, userId :: String }
 newtype UpdateUserBody
   = UpdateUserBody { face :: String }
 
@@ -35,6 +36,30 @@ instance decodeJsonUpdateUserBody :: DecodeJson UpdateUserBody where
     o <- decodeJson json
     face <- o .? "face"
     pure $ UpdateUserBody { face }
+
+credentials :: Query -> Maybe Credentials
+credentials query = do
+  let lookup k a = maybe Nothing snd $ find (\t -> fst t == k) a
+  password <- lookup "password" query
+  userId <- lookup "user_id" query
+  pure { password, userId }
+
+authenticate :: Query -> Array UserStatus -> Maybe UserStatus
+authenticate query users =
+  credentials query >>= (flip authenticatedUser users)
+
+authenticatedUser
+  :: Credentials
+  -> Array UserStatus
+  -> Maybe UserStatus
+authenticatedUser { password, userId } users =
+  find
+    (\(UserStatus
+      { user: (User { id: (UserId uuid), password: p })
+      }) ->
+        show uuid == userId && p == password
+    )
+    users
 
 modify' :: forall a. (a -> Boolean) -> (a -> a) -> Array a -> Maybe (Array a)
 modify' f g xs = do
@@ -77,28 +102,10 @@ handleGetUsersAction
   -> Query
   -> Eff ( ref :: REF | e ) (Tuple Status View)
 handleGetUsersAction ref query = do
-  case credentials of
+  users <- getUsers ref
+  case authenticate query users of
     Nothing -> pure $ Tuple statusForbidden ForbiddenView
-    (Just c) -> do
-      users <- getUsers ref
-      case
-        find
-          (\(UserStatus
-            { user: (User { id: (UserId uuid), password })
-            }) ->
-              show uuid == c.userId && password == c.password
-          )
-          users
-        of
-        Nothing -> pure $ Tuple statusForbidden ForbiddenView
-        (Just _) -> pure $ Tuple statusOK (UsersView users)
-  where
-    credentials :: Maybe { password :: String, userId :: String }
-    credentials = do
-      let lookup k a = maybe Nothing snd $ find (\t -> fst t == k) a
-      password <- lookup "password" query
-      userId <- lookup "user_id" query
-      pure { password, userId }
+    (Just _) -> pure $ Tuple statusOK (UsersView users)
 
 handleUpdateUserAction
   :: forall e. Ref State
