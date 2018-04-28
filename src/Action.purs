@@ -9,7 +9,7 @@ import Data.Array (findIndex, modifyAt)
 import Data.Either (Either(..))
 import Data.FaceWithTime (fwt)
 import Data.Foldable (find)
-import Data.Function (flip, ($))
+import Data.Function (const, flip, ($))
 import Data.Functor ((<$>))
 import Data.Maybe (Maybe(..), maybe)
 import Data.Show (show)
@@ -43,10 +43,6 @@ credentials query = do
   password <- lookup "password" query
   userId <- lookup "user_id" query
   pure { password, userId }
-
-authenticate :: Query -> Array UserStatus -> Maybe UserStatus
-authenticate query users =
-  credentials query >>= (flip authenticatedUser users)
 
 authenticatedUser
   :: Credentials
@@ -103,9 +99,12 @@ handleGetUsersAction
   -> Eff ( ref :: REF | e ) (Tuple Status View)
 handleGetUsersAction ref query = do
   users <- getUsers ref
-  case authenticate query users of
-    Nothing -> pure $ Tuple statusForbidden ForbiddenView
-    (Just _) -> pure $ Tuple statusOK (UsersView users)
+  pure $ if authenticate query users
+    then Tuple statusForbidden ForbiddenView
+    else Tuple statusOK (UsersView users)
+  where
+    authenticate query users = maybe false (const true) $
+      credentials query >>= (flip authenticatedUser users)
 
 handleUpdateUserAction
   :: forall e. Ref State
