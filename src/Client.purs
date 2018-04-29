@@ -4,27 +4,23 @@ module Client
 
 import Capture (snapshot, start, stop)
 import Control.Applicative (pure, (<$>))
-import Control.Bind (bind, (>>=))
+import Control.Bind (bind)
 import Control.Monad.Aff (Aff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.AVar (AVAR)
 import Control.Monad.Eff.Console (CONSOLE, log)
-import Control.Monad.Eff.Exception (EXCEPTION, throw)
+import Control.Monad.Eff.Exception (EXCEPTION)
 import Control.Monad.Eff.Ref (REF)
 import DOM (DOM)
-import Data.Argonaut (decodeJson, jsonParser)
 import Data.Array (filter, find)
 import Data.ClientFaceWithTime (ClientFaceWithTime(..))
 import Data.ClientUser (ClientUser(..))
-import Data.Either (Either(..), either)
 import Data.Foldable (length)
-import Data.Function (const, id)
+import Data.Function (const)
 import Data.Maybe (Maybe(..), isNothing, maybe)
 import Data.NaturalTransformation (type (~>))
 import Data.Semigroup ((<>))
-import Data.StrMap (StrMap, lookup)
-import Data.Tuple (Tuple(..))
-import Data.URL (URL(..), parseUrlWithQuery)
+import Data.StrMap (lookup)
 import Data.UUID (parseUUID)
 import Data.Unit (Unit)
 import Data.UserId (UserId(..))
@@ -38,6 +34,7 @@ import Halogen.HTML.Properties as HP
 import Halogen.VDom.Driver (runUI)
 import Network.HTTP.Affjax as AX
 import Prelude (discard, eq, not, show, ($), (==), (>))
+import Request as Request
 import Video (MEDIA, VIDEO)
 
 type ClientUserStatus =
@@ -236,25 +233,21 @@ button =
       LoadRequest next -> do
         { password, secret, userId, userStatuses } <- H.get
         H.modify (_ { loading = true })
-        let params =
-              [ Tuple "password" $ Just password
-              , Tuple "secret" $ secret
-              , Tuple "user_id" $ Just userId
-              ]
-        case (parseUrlWithQuery "/faces" params) of
-          Nothing -> pure next
-          (Just (URL url)) -> do
-            response <- H.liftAff $ AX.get url
-            let faces :: Array ClientFaceWithTime
-                faces = either (const []) id $ decodeJson response.response
-                unknownFaces =
-                  filter
-                    (\(ClientFaceWithTime { userId }) ->
-                      eq 0 $ length $ filter
-                        (\({ user: (ClientUser { id: u }) }) -> u == userId)
-                        userStatuses
-                    )
-                    faces
+        facesMaybe <- lift $ Request.getFaces { password, secret, userId }
+        case facesMaybe of
+          Nothing -> do
+            H.modify (_ { loading = false })
+            pure next
+          (Just faces) -> do
+            let
+              unknownFaces =
+                filter
+                  (\(ClientFaceWithTime { userId }) ->
+                    eq 0 $ length $ filter
+                      (\({ user: (ClientUser { id: u }) }) -> u == userId)
+                      userStatuses
+                  )
+                  faces
             if length unknownFaces > 0
                 then do
                   H.modify
@@ -273,16 +266,12 @@ button =
       SignIn next -> do
         { password, userId } <- H.get
         H.modify (_ { loading = true })
-        let params =
-              [ Tuple "password" $ Just password
-              , Tuple "user_id" $ Just userId
-              ]
-        case (parseUrlWithQuery "/users" params) of
-          Nothing -> pure next
-          (Just (URL url)) -> do
-            response <- H.liftAff $ AX.get url
-            let users :: Array ClientUser
-                users = either (const []) id $ decodeJson response.response
+        usersMaybe <- lift $ Request.getUsers { password, userId }
+        case usersMaybe of
+          Nothing -> do
+            H.modify (_ { loading = false })
+            pure next
+          (Just users) -> do
             H.modify
               (_ { loading = false
                  , signedInUser = Just { password, userId }
@@ -296,20 +285,13 @@ button =
           (Just face) -> do
             { password, userId } <- H.get
             H.modify (_ { loading = true })
-            let params =
-                  [ Tuple "password" $ Just password
-                  , Tuple "user_id" $ Just userId
-                  ]
-            case (parseUrlWithQuery "/faces" params) of
-              Nothing -> pure next
-              (Just (URL url)) -> do
-                response <- H.liftAff $ AX.post url ("{\"face\":\"" <> face <> "\"}")
-                let e =
-                      (jsonParser response.response >>= decodeJson) :: Either String (StrMap String)
-                let m =
-                      case e of
-                        (Left _) -> Nothing
-                        (Right map) -> lookup "secret" map
+            faceMaybe <- lift $ Request.createFace { password, userId } face
+            case faceMaybe of
+              Nothing -> do
+                H.modify (_ { loading = false })
+                pure next
+              (Just map) -> do
+                let m = lookup "secret" map
                 H.modify (_ { loading = false, secret = m })
                 pure next
       StartCapture next -> do

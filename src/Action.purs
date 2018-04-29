@@ -217,6 +217,6 @@ doAction ref (Just { action: GetUsers, query }) =
 doAction ref (Just { action: GetFaces, query }) =
   handleGetFacesAction ref query
 doAction ref (Just { action: CreateFace, body, query }) =
-  handleCreateFaceAction ref query body
+  handleCreateFaceAction ref query body -- TODO: remove query
 doAction _ _ =
   handleDefaultAction
