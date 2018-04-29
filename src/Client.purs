@@ -22,7 +22,7 @@ import Data.NaturalTransformation (type (~>))
 import Data.Semigroup ((<>))
 import Data.StrMap (lookup)
 import Data.UUID (parseUUID)
-import Data.Unit (Unit)
+import Data.Unit (Unit, unit)
 import Data.UserId (UserId(..))
 import Graphics.Canvas (CANVAS)
 import Halogen (ClassName(..), lift, liftEff)
@@ -44,7 +44,6 @@ type ClientUserStatus =
 
 type State =
   { isCapturing :: Boolean
-  , label :: String
   , loading :: Boolean
   , password :: String
   , signedInUser :: Maybe { password :: String, userId :: String }
@@ -60,7 +59,7 @@ data Query a
   | UpdateUserId String a
 
 data Message = Toggled Boolean
-type Input = String
+type Input = Unit
 
 mergeFaces
   :: Array ClientFaceWithTime -> Array ClientUserStatus -> Array ClientUserStatus
@@ -94,9 +93,8 @@ button =
     }
   where
     initialState :: Input -> State
-    initialState label =
+    initialState _ =
       { isCapturing: false
-      , label
       , loading: false
       , password: "pass1"
       , signedInUser: Nothing
@@ -308,4 +306,4 @@ main :: forall e. Eff ( ajax :: AX.AJAX
 main = HA.runHalogenAff do
   liftEff $ log "Hello!"
   body <- HA.awaitBody
-  runUI button "Hello!" body
+  runUI button unit body
