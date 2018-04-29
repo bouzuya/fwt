@@ -6,7 +6,7 @@ import Control.Monad.Eff.Now (NOW, now)
 import Control.Monad.Eff.Ref (REF, Ref, modifyRef, readRef)
 import Data.Argonaut (class DecodeJson, decodeJson, jsonParser, (.?))
 import Data.Array (findIndex, modifyAt)
-import Data.Either (Either(..))
+import Data.Either (Either(..), either)
 import Data.FaceWithTime (fwt)
 import Data.Foldable (find)
 import Data.Function (const, flip, ($))
@@ -15,11 +15,12 @@ import Data.Maybe (Maybe(..), maybe)
 import Data.Show (show)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.URL (url)
+import Data.UUID (parseUUID)
 import Data.User (User(User))
 import Data.UserId (UserId(..))
 import Data.UserStatus (UserStatus(..))
 import Hyper.Status (Status, statusBadRequest, statusForbidden, statusNotFound, statusOK)
-import Prelude (bind, discard, (&&), (==), (>>=))
+import Prelude (bind, discard, (&&), (/=), (==), (>>=))
 import Route (Action(..))
 import View (View(..))
 
@@ -70,15 +71,15 @@ getUsers ref = do
 updateUser
   :: forall e
   . Ref State
-  -> String
+  -> User
   -> UpdateUserBody
   -> Eff ( now :: NOW, ref :: REF | e) (Maybe (Array UserStatus))
-updateUser ref id' (UpdateUserBody { face }) = do
+updateUser ref user (UpdateUserBody { face }) = do
   time <- now
   { users } <- readRef ref
   case
     modify'
-      (\(UserStatus { user: (User { id }) }) -> show id == id')
+      (\(UserStatus { user: user' }) -> user == user')
       (\(UserStatus { user }) ->
           UserStatus
             { user
@@ -100,8 +101,8 @@ handleGetUsersAction
 handleGetUsersAction ref query = do
   users <- getUsers ref
   pure $ if authenticate query users
-    then Tuple statusForbidden ForbiddenView
-    else Tuple statusOK (UsersView users)
+    then Tuple statusOK (UsersView users)
+    else Tuple statusForbidden ForbiddenView
   where
     authenticate query users = maybe false (const true) $
       credentials query >>= (flip authenticatedUser users)
@@ -109,16 +110,41 @@ handleGetUsersAction ref query = do
 handleUpdateUserAction
   :: forall e. Ref State
   -> String
+  -> Query
   -> Body
   -> Eff ( now :: NOW, ref :: REF | e ) (Tuple Status View)
-handleUpdateUserAction ref id' body = do
-  case (jsonParser body >>= decodeJson) :: Either String UpdateUserBody of
-    Left _ -> pure $ Tuple statusBadRequest BadRequestView
-    Right body' -> do
-      result <- updateUser ref id' body'
-      pure $ case result of
-        Nothing -> Tuple statusNotFound NotFoundView
-        (Just _) -> Tuple statusOK OKView
+handleUpdateUserAction ref id' query body = do
+  users <- getUsers ref
+  case auth users query of
+    (Left r) -> pure r
+    (Right userStatus@(UserStatus { user: user@(User { id }) })) -> do
+      case parseUUID id' of
+        Nothing -> pure $ Tuple statusForbidden ForbiddenView
+        (Just uuid) -> do
+          let userId = UserId uuid
+          if id /= userId
+            then pure $ Tuple statusForbidden ForbiddenView
+            else do
+              case params body of
+                (Left r) -> pure r
+                (Right body') -> do
+                  result <- updateUser ref user body'
+                  pure $ case result of
+                    Nothing -> Tuple statusNotFound NotFoundView
+                    (Just _) -> Tuple statusOK OKView
+  where
+    auth :: Array UserStatus -> Query -> Either (Tuple Status View) UserStatus
+    auth users query =
+      maybe
+        (Left $ Tuple statusForbidden ForbiddenView)
+        Right
+        (credentials query >>= (flip authenticatedUser users))
+    params :: String -> Either (Tuple Status View) UpdateUserBody
+    params body =
+      either
+        (const $ Left $ Tuple statusBadRequest BadRequestView)
+        Right
+        ((jsonParser body >>= decodeJson) :: Either String UpdateUserBody)
 
 handleGetFacesAction
   :: forall e. Ref State
@@ -143,8 +169,8 @@ doAction _ (Just { action: GetIndex }) =
   handleGetIndexAction
 doAction ref (Just { action: GetUsers, query }) =
   handleGetUsersAction ref query
-doAction ref (Just { action: (UpdateUser id'), body }) =
-  handleUpdateUserAction ref id' body
+doAction ref (Just { action: (UpdateUser id'), body, query }) =
+  handleUpdateUserAction ref id' query body
 doAction ref (Just { action: GetFaces, query }) =
   handleGetFacesAction ref query
 doAction ref (Just { action: CreateFace, body }) =

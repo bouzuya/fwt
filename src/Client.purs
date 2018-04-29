@@ -124,7 +124,7 @@ button =
             , landimg "face" "Face" $ maybe "" (\(FaceWithTime { face }) -> show face) fwt
             , landv "time" "Time" $ maybe "" (\(FaceWithTime { time }) -> toIso8601 time) fwt
             ]
-        renderMe me =
+        renderMe me' =
           HH.div
           [ HP.classes [ ClassName "capture" ] ] $
           [ HH.div [ HP.classes [ ClassName "controls" ] ]
@@ -160,7 +160,7 @@ button =
             , HP.id_ "canvas"
             , HP.width 640
             ]
-          ] <> (maybe [] userStatus me)
+          ] <> (maybe [] userStatus me')
       in
         HH.div []
         [ HH.label []
@@ -233,11 +233,19 @@ button =
         case dataUrl of
           Nothing -> pure next
           (Just face) -> do
-            { userId } <- H.get
+            { password, userId } <- H.get
             H.modify (_ { loading = true })
-            response <- H.liftAff $ AX.put ("/users/" <> userId) ("{\"face\":\"" <> face <> "\"}")
-            H.modify (_ { loading = false, result = Just response.response })
-            pure next
+            let params =
+                  [ Tuple "password" $ Just password
+                  , Tuple "user_id" $ Just userId
+                  ]
+                urlMaybe = urlWithQuery ("/users/" <> userId) params
+            case urlMaybe of
+              Nothing -> pure next
+              (Just (URL url)) -> do
+                response <- H.liftAff $ AX.put url ("{\"face\":\"" <> face <> "\"}")
+                H.modify (_ { loading = false, result = Just response.response })
+                pure next
       StartCapture next -> do
         _ <- lift $ start
         H.modify (_ { isCapturing = true })
