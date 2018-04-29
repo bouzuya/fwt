@@ -15,7 +15,7 @@ import DOM (DOM)
 import Data.Argonaut (decodeJson, jsonParser)
 import Data.Array (filter, find)
 import Data.Either (Either(..), either)
-import Data.FaceWithTime (FaceWithTime(..), toIso8601)
+import Data.FaceWithTime (FaceWithTime(..))
 import Data.Function (const, id)
 import Data.Maybe (Maybe(..), isNothing, maybe)
 import Data.NaturalTransformation (type (~>))
@@ -126,7 +126,7 @@ button =
             [ landv "user-id" "UserId" $ show userId
             , landv "user-name" "UserName" $ userName
             , landimg "face" "Face" $ maybe "" (\(FaceWithTime { face }) -> show face) fwt
-            , landv "time" "Time" $ maybe "" (\(FaceWithTime { time }) -> toIso8601 time) fwt
+            , landv "time" "Time" $ maybe "" (\(FaceWithTime { time }) -> show time) fwt
             ]
         renderMe me' =
           HH.div

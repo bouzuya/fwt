@@ -4,7 +4,7 @@ module View.FaceSubView
 
 import Data.Argonaut (class EncodeJson, encodeJson)
 import Data.Argonaut as Json
-import Data.FaceWithTime (FaceWithTime(..), toIso8601)
+import Data.FaceWithTime (FaceWithTime(..))
 import Data.StrMap as StrMap
 import Data.Tuple (Tuple(..))
 import Prelude (($))
@@ -15,5 +15,5 @@ instance encodeJsonFaceSubView :: EncodeJson FaceSubView where
   encodeJson (FaceSubView (FaceWithTime { face, time })) =
     Json.fromObject $ StrMap.fromFoldable
       [ Tuple "face" $ encodeJson face
-      , Tuple "time" $ Json.fromString $ toIso8601 time
+      , Tuple "time" $ encodeJson time
       ]
