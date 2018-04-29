@@ -1,6 +1,7 @@
 module View (View(..)) where
 
 import Data.Argonaut (class EncodeJson, encodeJson, fromArray, fromObject, fromString, stringify)
+import Data.FaceWithTime (FaceWithTime)
 import Data.Function (($))
 import Data.Functor ((<$>))
 import Data.Show (class Show)
@@ -12,11 +13,13 @@ import Halogen.HTML (HTML(..), PlainHTML)
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.DOM.StringRenderer (render)
+import View.FaceWithSecretView (FaceWithSecretView(..))
 import View.UserStatusView (UserStatusView(..))
 
 data View
   = BadRequestView
   | ErrorView
+  | FaceView FaceWithTime
   | FacesView (Array UserStatus)
   | ForbiddenView
   | IndexView
@@ -29,6 +32,7 @@ instance encodeJsonView :: EncodeJson View where
     [ Tuple "status" $ fromString "BadRequest" ]
   encodeJson ErrorView = fromObject $ StrMap.fromFoldable
     [ Tuple "status" $ fromString "ERROR" ]
+  encodeJson (FaceView fwt) = encodeJson $ FaceWithSecretView fwt
   encodeJson (FacesView xs) =
     fromArray $ encodeJson <$> UserStatusView <$> xs
   encodeJson ForbiddenView = fromObject $ StrMap.fromFoldable

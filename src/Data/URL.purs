@@ -33,7 +33,7 @@ url :: String -> Maybe URL
 url = Just <$> URL -- TODO
 
 urlWithQuery :: String -> Array (Tuple String (Maybe String)) -> Maybe URL
-urlWithQuery url query = Just <$> URL $ url <> "?" <> qs
+urlWithQuery url' query = Just <$> URL $ url' <> "?" <> qs
   where
     f (Tuple k Nothing) = encodeURIComponent k <> "="
     f (Tuple k (Just v)) = encodeURIComponent k <> "=" <> encodeURIComponent v

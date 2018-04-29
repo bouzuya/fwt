@@ -4,6 +4,7 @@ import Control.Applicative (pure)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Now (NOW, now)
 import Control.Monad.Eff.Ref (REF, Ref, modifyRef, readRef)
+import Control.Monad.Maybe.Trans (MaybeT(..), lift, runMaybeT)
 import Data.Argonaut (class DecodeJson, decodeJson, jsonParser, (.?))
 import Data.Array (findIndex, modifyAt)
 import Data.Either (Either(..), either)
@@ -20,7 +21,7 @@ import Data.User (User(User))
 import Data.UserId (UserId(..))
 import Data.UserStatus (UserStatus(..))
 import Hyper.Status (Status, statusBadRequest, statusForbidden, statusNotFound, statusOK)
-import Prelude (bind, discard, (&&), (==), (>>=))
+import Prelude (bind, (&&), (==), (>>=))
 import Route (Action(..))
 import View (View(..))
 
@@ -95,6 +96,16 @@ getUserStatuses ref = do
   { users } <- readRef ref
   pure users
 
+createFaceWithTime
+  :: forall e
+  . String
+  -> Eff (now :: NOW, uuid :: GENUUID | e) (Maybe FaceWithTime)
+createFaceWithTime face = runMaybeT do
+  secret <- lift $ show <$> genUUID
+  time <- lift now
+  faceUrl <- MaybeT $ pure $ url face
+  pure $ FaceWithTime { face: faceUrl, secret, time }
+
 updateUser
   :: forall e
   . Ref State
@@ -106,24 +117,17 @@ updateUser
       , uuid :: GENUUID
       | e
       )
-      (Maybe (Array UserStatus))
-updateUser ref user (UpdateUserBody { face }) = do
-  secret <- show <$> genUUID
-  time <- now
-  { users } <- readRef ref
-  case
-    modify'
+      (Maybe FaceWithTime)
+updateUser ref user (UpdateUserBody { face }) = runMaybeT do
+  fwt <- MaybeT $ createFaceWithTime face
+  { users } <- lift $ readRef ref
+  newUsers <-
+    MaybeT $ pure $ modify'
       (\(UserStatus { user: user' }) -> user == user')
-      (\(UserStatus { user: user' }) ->
-          UserStatus
-            { user: user'
-            , fwt: (\f -> FaceWithTime { face: f, secret, time }) <$> url face
-            })
-      users of
-    Nothing -> pure Nothing
-    (Just newUsers) -> do
-      modifyRef ref (\_ -> { users: newUsers })
-      pure $ Just newUsers
+      (\(UserStatus { user: user' }) -> UserStatus { fwt: Just fwt, user: user' })
+      users
+  _ <- lift $ modifyRef ref (\_ -> { users: newUsers })
+  pure fwt
 
 handleGetIndexAction :: forall e. Eff e (Tuple Status View)
 handleGetIndexAction = pure $ Tuple statusOK IndexView
@@ -176,7 +180,7 @@ handleCreateFaceAction ref query body = do
           result <- updateUser ref user body'
           pure $ case result of
             Nothing -> Tuple statusNotFound NotFoundView
-            (Just _) -> Tuple statusOK OKView
+            (Just fwt) -> Tuple statusOK (FaceView fwt)
   where
     auth :: Array UserStatus -> Query -> Either (Tuple Status View) UserStatus
     auth users q =
