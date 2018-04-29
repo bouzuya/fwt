@@ -4,7 +4,7 @@ module Client
 
 import Capture (snapshot, start, stop)
 import Control.Applicative (pure, (<$>))
-import Control.Bind (bind)
+import Control.Bind (bind, (>>=))
 import Control.Monad.Aff (Aff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.AVar (AVAR)
@@ -12,14 +12,15 @@ import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Exception (EXCEPTION)
 import Control.Monad.Eff.Ref (REF)
 import DOM (DOM)
-import Data.Argonaut (decodeJson)
+import Data.Argonaut (decodeJson, jsonParser)
 import Data.Array (filter, find, length)
-import Data.Either (either)
+import Data.Either (Either(..), either)
 import Data.FaceWithTime (FaceWithTime(..), toIso8601)
 import Data.Function (const, id)
 import Data.Maybe (Maybe(..), maybe)
 import Data.NaturalTransformation (type (~>))
 import Data.Semigroup ((<>))
+import Data.StrMap (StrMap, lookup)
 import Data.Tuple (Tuple(..))
 import Data.URL (URL(..), urlWithQuery)
 import Data.UUID (parseUUID)
@@ -44,7 +45,7 @@ type State =
   , label :: String
   , loading :: Boolean
   , password :: String
-  , result :: Maybe String
+  , secret :: Maybe String
   , userId :: String
   , users :: Array UserStatus
   }
@@ -89,7 +90,7 @@ button =
       , label
       , loading: false
       , password: "pass1"
-      , result: Nothing
+      , secret: Nothing
       , userId: "user1"
       , users: []
       }
@@ -214,11 +215,11 @@ button =
           )
     eval = case _ of
       LoadRequest next -> do
-        { password, userId } <- H.get
+        { password, secret, userId } <- H.get
         H.modify (_ { loading = true })
         let params =
               [ Tuple "password" $ Just password
-              , Tuple "secret" $ Just "abc" -- TODO: get secret
+              , Tuple "secret" $ secret
               , Tuple "user_id" $ Just userId
               ]
         case (urlWithQuery "/faces" params) of
@@ -243,7 +244,13 @@ button =
               Nothing -> pure next
               (Just (URL url)) -> do
                 response <- H.liftAff $ AX.post url ("{\"face\":\"" <> face <> "\"}")
-                H.modify (_ { loading = false, result = Just response.response })
+                let e =
+                      (jsonParser response.response >>= decodeJson) :: Either String (StrMap String)
+                let m =
+                      case e of
+                        (Left _) -> Nothing
+                        (Right map) -> lookup "secret" map
+                H.modify (_ { loading = false, secret = m })
                 pure next
       StartCapture next -> do
         _ <- lift $ start
