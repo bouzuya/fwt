@@ -56,7 +56,6 @@ type State =
 data Query a
   = SignIn a
   | Snapshot a
-  | StartCapture a
   | StopCapture a
   | UpdatePassword String a
   | UpdateUserId String a
@@ -151,13 +150,7 @@ button =
                 [ HH.text "SNAPSHOT" ]
               ]
             else
-              [
-                HH.div
-                [ HP.classes [ ClassName "start-button" ]
-                , HE.onClick (HE.input_ StartCapture)
-                ]
-                [ HH.text "START" ]
-              ]
+              []
           , HH.video
             [ HP.autoplay true
             , HP.height 320
@@ -239,6 +232,9 @@ button =
                  , signedInUser = Just { password, userId }
                  , userStatuses = (\user -> { fwt: Nothing, user }) <$> users
                  })
+            -- start capture
+            _ <- lift $ start
+            H.modify (_ { isCapturing = true })
             pure next
       Snapshot next -> do
         dataUrl <- H.liftEff $ snapshot
@@ -288,10 +284,6 @@ button =
                               , userStatuses = (mergeFaces faces s.userStatuses)
                               })
                           pure next
-      StartCapture next -> do
-        _ <- lift $ start
-        H.modify (_ { isCapturing = true })
-        pure next
       StopCapture next -> do
         _ <- H.liftEff $ stop
         H.modify (_ { isCapturing = false })
