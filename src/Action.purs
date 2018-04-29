@@ -63,8 +63,9 @@ modify' f g xs = do
   index <- findIndex f xs
   modifyAt index g xs
 
-getUsers :: forall e. Ref State -> Eff ( ref :: REF | e ) (Array UserStatus)
-getUsers ref = do
+getUserStatuses
+  :: forall e. Ref State -> Eff ( ref :: REF | e ) (Array UserStatus)
+getUserStatuses ref = do
   { users } <- readRef ref
   pure users
 
@@ -99,7 +100,7 @@ handleGetUsersAction
   -> Query
   -> Eff ( ref :: REF | e ) (Tuple Status View)
 handleGetUsersAction ref query = do
-  users <- getUsers ref
+  users <- getUserStatuses ref
   pure $ if authenticate query users
     then Tuple statusOK (UsersView users)
     else Tuple statusForbidden ForbiddenView
@@ -114,14 +115,13 @@ handleUpdateUserAction
   -> Body
   -> Eff ( now :: NOW, ref :: REF | e ) (Tuple Status View)
 handleUpdateUserAction ref id' query body = do
-  users <- getUsers ref
+  users <- getUserStatuses ref
   case auth users query of
     (Left r) -> pure r
     (Right userStatus@(UserStatus { user: user@(User { id }) })) -> do
-      case parseUUID id' of
+      case parseUserId id' of
         Nothing -> pure $ Tuple statusForbidden ForbiddenView
-        (Just uuid) -> do
-          let userId = UserId uuid
+        (Just userId) -> do
           if id /= userId
             then pure $ Tuple statusForbidden ForbiddenView
             else do
@@ -145,6 +145,8 @@ handleUpdateUserAction ref id' query body = do
         (const $ Left $ Tuple statusBadRequest BadRequestView)
         Right
         ((jsonParser body >>= decodeJson) :: Either String UpdateUserBody)
+    parseUserId :: String -> Maybe UserId
+    parseUserId idString = UserId <$> parseUUID idString
 
 handleGetFacesAction
   :: forall e. Ref State
