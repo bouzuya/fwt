@@ -135,11 +135,6 @@ button =
             if state.isCapturing
             then
               [ HH.div
-                [ HP.classes [ ClassName "stop-button" ]
-                , HE.onClick (HE.input_ SignOut)
-                ]
-                [ HH.text "STOP" ]
-              , HH.div
                 [ HP.classes [ ClassName "snapshot-button" ]
                 , HE.onClick (HE.input_ Snapshot)
                 ]
@@ -189,7 +184,29 @@ button =
             ]
           else
             HH.div []
-            [ HH.ul [] $
+            [ HH.label []
+              [ HH.span [] [ HH.text "user id" ]
+              , HH.input
+                [ HE.onValueChange (HE.input UpdateUserId)
+                , HP.readOnly true
+                , HP.type_ HP.InputText
+                , HP.value state.userId
+                ]
+              ]
+            , HH.label []
+              [ HH.span [] [ HH.text "password" ]
+              , HH.input
+                [ HE.onValueChange (HE.input UpdatePassword)
+                , HP.readOnly true
+                , HP.type_ HP.InputPassword
+                , HP.value state.password
+                ]
+              ]
+            , HH.button
+              [ HE.onClick (HE.input_ SignOut)
+              ]
+              [ HH.text "SIGN OUT" ]
+            , HH.ul [] $
               [ HH.li [] [ renderMe me ]
               ] <>
               ( (\user ->
@@ -198,6 +215,9 @@ button =
                   ]
                 ) <$> others
               )
+            , HH.span []
+              [ if state.loading then HH.text "LOADING..." else HH.text ""
+              ]
             ]
     eval
       :: Query
