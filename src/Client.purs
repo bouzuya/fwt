@@ -218,10 +218,10 @@ button =
         H.modify (_ { loading = true })
         let params =
               [ Tuple "password" $ Just password
+              , Tuple "secret" $ Just "abc" -- TODO: get secret
               , Tuple "user_id" $ Just userId
               ]
-            urlMaybe = urlWithQuery "/users" params
-        case urlMaybe of
+        case (urlWithQuery "/faces" params) of
           Nothing -> pure next
           (Just (URL url)) -> do
             response <- H.liftAff $ AX.get url
@@ -239,8 +239,7 @@ button =
                   [ Tuple "password" $ Just password
                   , Tuple "user_id" $ Just userId
                   ]
-                urlMaybe = urlWithQuery "/faces/" params
-            case urlMaybe of
+            case (urlWithQuery "/faces" params) of
               Nothing -> pure next
               (Just (URL url)) -> do
                 response <- H.liftAff $ AX.post url ("{\"face\":\"" <> face <> "\"}")

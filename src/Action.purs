@@ -7,11 +7,11 @@ import Control.Monad.Eff.Ref (REF, Ref, modifyRef, readRef)
 import Data.Argonaut (class DecodeJson, decodeJson, jsonParser, (.?))
 import Data.Array (findIndex, modifyAt)
 import Data.Either (Either(..), either)
-import Data.FaceWithTime (fwt)
+import Data.FaceWithTime (FaceWithTime(..), fwt)
 import Data.Foldable (find)
 import Data.Function (const, flip, ($))
 import Data.Functor ((<$>))
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..), isJust, maybe)
 import Data.Show (show)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.URL (url)
@@ -28,6 +28,7 @@ type Query = Array (Tuple String (Maybe String))
 type Body = String
 type ActionWithParams = { action :: Action, body :: Body, query :: Query }
 type Credentials = { password :: String, userId :: String }
+type Credentials' = { password :: String, secret :: String, userId :: String }
 newtype UpdateUserBody
   = UpdateUserBody { face :: String }
 
@@ -44,6 +45,14 @@ credentials query = do
   userId <- lookup "user_id" query
   pure { password, userId }
 
+credentials' :: Query -> Maybe Credentials'
+credentials' query = do
+  let lookup k a = maybe Nothing snd $ find (\t -> fst t == k) a
+  password <- lookup "password" query
+  secret <- lookup "secret" query
+  userId <- lookup "user_id" query
+  pure { password, secret, userId }
+
 authenticatedUser
   :: Credentials
   -> Array UserStatus
@@ -54,6 +63,23 @@ authenticatedUser { password, userId } users =
       { user: (User { id: (UserId uuid), password: p })
       }) ->
         show uuid == userId && p == password
+    )
+    users
+
+authenticatedUser'
+  :: Credentials'
+  -> Array UserStatus
+  -> Maybe UserStatus
+authenticatedUser' { password, secret, userId } users =
+  find
+    (\(UserStatus
+      { fwt
+      , user: (User { id: (UserId uuid), password: p })
+      }) ->
+        case fwt of
+          Nothing -> false
+          (Just (FaceWithTime { secret: s })) ->
+            show uuid == userId && p == password && s == secret
     )
     users
 
@@ -83,7 +109,7 @@ updateUser ref user (UpdateUserBody { face }) = do
       (\(UserStatus { user }) ->
           UserStatus
             { user
-            , fwt: (\f -> fwt { face: f, time }) <$> url face
+            , fwt: (\f -> fwt { face: f, secret: "abc", time }) <$> url face -- TODO: generate secret
             })
       users of
     Nothing -> pure Nothing
@@ -111,7 +137,14 @@ handleGetFacesAction
   :: forall e. Ref State
   -> Query
   -> Eff ( ref :: REF | e ) (Tuple Status View)
-handleGetFacesAction _ _ = pure $ Tuple statusNotFound ErrorView
+handleGetFacesAction ref query =  do
+  users <- getUserStatuses ref
+  pure $ if authenticate query users
+    then Tuple statusOK (FacesView users)
+    else Tuple statusForbidden ForbiddenView
+  where
+    authenticate query users = maybe false (const true) $
+      credentials query >>= (flip authenticatedUser users)
 
 handleCreateFaceAction
   :: forall e. Ref State

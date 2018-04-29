@@ -15,19 +15,24 @@ import Data.StrMap (fromFoldable) as StrMap
 import Data.Tuple (Tuple(..))
 import Data.URL (URL)
 
-newtype FaceWithTime = FaceWithTime { face :: URL, time :: Instant }
+newtype FaceWithTime = FaceWithTime
+  { face :: URL
+  , secret :: String
+  , time :: Instant }
 
 instance decodeJsonFaceWithTime :: DecodeJson FaceWithTime where
   decodeJson json = do
     o <- decodeJson json
     face <- o .? "face"
+    secret <- o .? "secret"
     time <- o .? "time" >>= fromString'
-    pure $ FaceWithTime { face, time }
+    pure $ FaceWithTime { face, secret, time }
 
 instance encodeJsonFaceWithTime :: EncodeJson FaceWithTime where
-  encodeJson (FaceWithTime { face, time }) =
+  encodeJson (FaceWithTime { face, secret, time }) =
     fromObject $ StrMap.fromFoldable
       [ Tuple "face" $ encodeJson face
+      , Tuple "secret" $ fromString secret
       , Tuple "time" $ fromString $ toIso8601 time
       ]
 
@@ -57,5 +62,5 @@ toIso8601 i = format formatter $ toDateTime i
       ]
     formatter = fromFoldable $ dateTimeFormat <> [Placeholder "Z"]
 
-fwt :: { face :: URL, time :: Instant } -> FaceWithTime
+fwt :: { face :: URL, secret :: String, time :: Instant } -> FaceWithTime
 fwt = FaceWithTime

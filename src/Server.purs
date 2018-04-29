@@ -128,8 +128,9 @@ main = do
   instant' <- now
   let fwt' = do
         face <- url "https://bouzuya.net/images/bouzuya-icon-v3.png"
+        secret <- pure $ "abc" -- TODO: generate secret
         time <- pure $ instant'
-        pure $ fwt { face, time }
+        pure $ fwt { face, secret, time }
   log $ show fwt'
   -- TODO: test route
   -- TODO: extract app handler
