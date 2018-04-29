@@ -12,8 +12,9 @@ import Prelude (($))
 newtype FaceSubView = FaceSubView FaceWithTime
 
 instance encodeJsonFaceSubView :: EncodeJson FaceSubView where
-  encodeJson (FaceSubView (FaceWithTime { face, time })) =
+  encodeJson (FaceSubView (FaceWithTime { face, time, userId })) =
     Json.fromObject $ StrMap.fromFoldable
       [ Tuple "face" $ encodeJson face
       , Tuple "time" $ encodeJson time
+      , Tuple "user_id" $ encodeJson userId
       ]
