@@ -239,11 +239,11 @@ button =
                   [ Tuple "password" $ Just password
                   , Tuple "user_id" $ Just userId
                   ]
-                urlMaybe = urlWithQuery ("/users/" <> userId) params
+                urlMaybe = urlWithQuery "/faces/" params
             case urlMaybe of
               Nothing -> pure next
               (Just (URL url)) -> do
-                response <- H.liftAff $ AX.put url ("{\"face\":\"" <> face <> "\"}")
+                response <- H.liftAff $ AX.post url ("{\"face\":\"" <> face <> "\"}")
                 H.modify (_ { loading = false, result = Just response.response })
                 pure next
       StartCapture next -> do

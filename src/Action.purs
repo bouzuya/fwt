@@ -108,30 +108,29 @@ handleGetUsersAction ref query = do
     authenticate query users = maybe false (const true) $
       credentials query >>= (flip authenticatedUser users)
 
-handleUpdateUserAction
+handleGetFacesAction
   :: forall e. Ref State
-  -> String
+  -> Query
+  -> Eff ( ref :: REF | e ) (Tuple Status View)
+handleGetFacesAction _ _ = pure $ Tuple statusNotFound ErrorView
+
+handleCreateFaceAction
+  :: forall e. Ref State
   -> Query
   -> Body
   -> Eff ( now :: NOW, ref :: REF | e ) (Tuple Status View)
-handleUpdateUserAction ref id' query body = do
+handleCreateFaceAction ref query body = do
   users <- getUserStatuses ref
   case auth users query of
     (Left r) -> pure r
     (Right userStatus@(UserStatus { user: user@(User { id }) })) -> do
-      case parseUserId id' of
-        Nothing -> pure $ Tuple statusForbidden ForbiddenView
-        (Just userId) -> do
-          if id /= userId
-            then pure $ Tuple statusForbidden ForbiddenView
-            else do
-              case params body of
-                (Left r) -> pure r
-                (Right body') -> do
-                  result <- updateUser ref user body'
-                  pure $ case result of
-                    Nothing -> Tuple statusNotFound NotFoundView
-                    (Just _) -> Tuple statusOK OKView
+      case params body of
+        (Left r) -> pure r
+        (Right body') -> do
+          result <- updateUser ref user body'
+          pure $ case result of
+            Nothing -> Tuple statusNotFound NotFoundView
+            (Just _) -> Tuple statusOK OKView
   where
     auth :: Array UserStatus -> Query -> Either (Tuple Status View) UserStatus
     auth users query =
@@ -145,20 +144,6 @@ handleUpdateUserAction ref id' query body = do
         (const $ Left $ Tuple statusBadRequest BadRequestView)
         Right
         ((jsonParser body >>= decodeJson) :: Either String UpdateUserBody)
-    parseUserId :: String -> Maybe UserId
-    parseUserId idString = UserId <$> parseUUID idString
-
-handleGetFacesAction
-  :: forall e. Ref State
-  -> Query
-  -> Eff ( ref :: REF | e ) (Tuple Status View)
-handleGetFacesAction _ _ = pure $ Tuple statusNotFound ErrorView
-
-handleCreateFaceAction
-  :: forall e. Ref State
-  -> Body
-  -> Eff ( ref :: REF | e ) (Tuple Status View)
-handleCreateFaceAction _ _ = pure $ Tuple statusNotFound ErrorView
 
 handleDefaultAction :: forall e. Eff e (Tuple Status View)
 handleDefaultAction = pure $ Tuple statusNotFound ErrorView
@@ -171,11 +156,9 @@ doAction _ (Just { action: GetIndex }) =
   handleGetIndexAction
 doAction ref (Just { action: GetUsers, query }) =
   handleGetUsersAction ref query
-doAction ref (Just { action: (UpdateUser id'), body, query }) =
-  handleUpdateUserAction ref id' query body
 doAction ref (Just { action: GetFaces, query }) =
   handleGetFacesAction ref query
-doAction ref (Just { action: CreateFace, body }) =
-  handleCreateFaceAction ref body
+doAction ref (Just { action: CreateFace, body, query }) =
+  handleCreateFaceAction ref query body
 doAction _ _ =
   handleDefaultAction
