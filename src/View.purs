@@ -1,20 +1,22 @@
 module View (View(..)) where
 
 import Data.Argonaut (class EncodeJson, encodeJson, fromArray, fromObject, fromString, stringify)
+import Data.Array (catMaybes)
 import Data.FaceWithTime (FaceWithTime)
 import Data.Function (($))
 import Data.Functor ((<$>))
 import Data.Show (class Show)
 import Data.StrMap (fromFoldable) as StrMap
 import Data.Tuple (Tuple(..))
+import Data.User (User)
 import Data.UserStatus (UserStatus(..))
 import Data.UserView (UserView(..))
 import Halogen.HTML (HTML(..), PlainHTML)
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.DOM.StringRenderer (render)
+import View.FaceSubView (FaceSubView(..))
 import View.FaceWithSecretView (FaceWithSecretView(..))
-import View.UserStatusView (UserStatusView(..))
 
 data View
   = BadRequestView
@@ -27,14 +29,19 @@ data View
   | OKView
   | UsersView (Array UserStatus)
 
+faces :: Array UserStatus -> Array FaceWithTime
+faces userStatuses = catMaybes $ (\(UserStatus { fwt }) -> fwt) <$> userStatuses
+
+users :: Array UserStatus -> Array User
+users userStatuses = (\(UserStatus { user }) -> user) <$> userStatuses
+
 instance encodeJsonView :: EncodeJson View where
   encodeJson BadRequestView = fromObject $ StrMap.fromFoldable
     [ Tuple "status" $ fromString "BadRequest" ]
   encodeJson ErrorView = fromObject $ StrMap.fromFoldable
     [ Tuple "status" $ fromString "ERROR" ]
   encodeJson (FaceView fwt) = encodeJson $ FaceWithSecretView fwt
-  encodeJson (FacesView xs) =
-    fromArray $ encodeJson <$> UserStatusView <$> xs
+  encodeJson (FacesView xs) = fromArray $ encodeJson <$> FaceSubView <$> faces xs
   encodeJson ForbiddenView = fromObject $ StrMap.fromFoldable
     [ Tuple "status" $ fromString "Forbidden" ]
   encodeJson IndexView = fromObject $ StrMap.fromFoldable
@@ -43,8 +50,7 @@ instance encodeJsonView :: EncodeJson View where
     [ Tuple "status" $ fromString "NotFound" ]
   encodeJson OKView = fromObject $ StrMap.fromFoldable
     [ Tuple "status" $ fromString "OK" ]
-  encodeJson (UsersView xs) =
-    fromArray $ encodeJson <$> (\(UserStatus { user }) -> UserView user) <$> xs
+  encodeJson (UsersView xs) = fromArray $ encodeJson <$> UserView <$> users xs
 
 indexView :: PlainHTML
 indexView = HH.html []
