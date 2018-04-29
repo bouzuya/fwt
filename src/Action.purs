@@ -15,6 +15,7 @@ import Data.Maybe (Maybe(..), maybe)
 import Data.Show (show)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.URL (url)
+import Data.UUID (GENUUID, genUUID)
 import Data.User (User(User))
 import Data.UserId (UserId(..))
 import Data.UserStatus (UserStatus(..))
@@ -99,8 +100,15 @@ updateUser
   . Ref State
   -> User
   -> UpdateUserBody
-  -> Eff ( now :: NOW, ref :: REF | e) (Maybe (Array UserStatus))
+  -> Eff
+      ( now :: NOW
+      , ref :: REF
+      , uuid :: GENUUID
+      | e
+      )
+      (Maybe (Array UserStatus))
 updateUser ref user (UpdateUserBody { face }) = do
+  secret <- show <$> genUUID
   time <- now
   { users } <- readRef ref
   case
@@ -109,7 +117,7 @@ updateUser ref user (UpdateUserBody { face }) = do
       (\(UserStatus { user: user' }) ->
           UserStatus
             { user: user'
-            , fwt: (\f -> FaceWithTime { face: f, secret: "abc", time }) <$> url face -- TODO: generate secret
+            , fwt: (\f -> FaceWithTime { face: f, secret, time }) <$> url face
             })
       users of
     Nothing -> pure Nothing
@@ -150,7 +158,13 @@ handleCreateFaceAction
   :: forall e. Ref State
   -> Query
   -> Body
-  -> Eff ( now :: NOW, ref :: REF | e ) (Tuple Status View)
+  -> Eff
+      ( now :: NOW
+      , ref :: REF
+      , uuid :: GENUUID
+      | e
+      )
+      (Tuple Status View)
 handleCreateFaceAction ref query body = do
   users <- getUserStatuses ref
   case auth users query of
@@ -183,7 +197,13 @@ handleDefaultAction = pure $ Tuple statusNotFound ErrorView
 doAction
   :: forall e. Ref State
   -> Maybe ActionWithParams
-  -> Eff ( now :: NOW, ref :: REF | e ) (Tuple Status View)
+  -> Eff
+      ( now :: NOW
+      , ref :: REF
+      , uuid :: GENUUID
+      | e
+      )
+      (Tuple Status View)
 doAction _ (Just { action: GetIndex }) =
   handleGetIndexAction
 doAction ref (Just { action: GetUsers, query }) =

@@ -90,6 +90,7 @@ app
            , http ∷ HTTP
            , now :: NOW
            , ref :: REF
+           , uuid :: GENUUID
            | e
            ))
       (Conn HttpRequest (HttpResponse StatusLineOpen) Components)
@@ -126,9 +127,10 @@ main = do
   log $ show $ user2
   log $ show $ user3
   instant' <- now
+  fwtSecret <- show <$> genUUID
   let fwt' = do
         face <- url "https://bouzuya.net/images/bouzuya-icon-v3.png"
-        secret <- pure $ "abc" -- TODO: generate secret
+        secret <- pure $ fwtSecret
         time <- pure $ instant'
         pure $ FaceWithTime { face, secret, time }
   log $ show fwt'
