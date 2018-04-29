@@ -54,8 +54,7 @@ type State =
   }
 
 data Query a
-  = LoadRequest a
-  | SignIn a
+  = SignIn a
   | Snapshot a
   | StartCapture a
   | StopCapture a
@@ -201,11 +200,7 @@ button =
             ]
           else
             HH.div []
-            [ HH.button
-              [ HE.onClick (HE.input_ LoadRequest)
-              ]
-              [ HH.text "LOAD" ]
-            , HH.ul [] $
+            [ HH.ul [] $
               [ HH.li [] [ renderMe me ]
               ] <>
               ( (\user ->
@@ -230,39 +225,6 @@ button =
             )
           )
     eval = case _ of
-      LoadRequest next -> do
-        { password, secret, userId, userStatuses } <- H.get
-        H.modify (_ { loading = true })
-        facesMaybe <- lift $ Request.getFaces { password, secret, userId }
-        case facesMaybe of
-          Nothing -> do
-            H.modify (_ { loading = false })
-            pure next
-          (Just faces) -> do
-            let
-              unknownFaces =
-                filter
-                  (\(ClientFaceWithTime { userId }) ->
-                    eq 0 $ length $ filter
-                      (\({ user: (ClientUser { id: u }) }) -> u == userId)
-                      userStatuses
-                  )
-                  faces
-            if length unknownFaces > 0
-                then do
-                  H.modify
-                    (\s -> s
-                      { loading = false
-                      , userStatuses = []
-                      })
-                  pure next -- TODO
-                else do
-                  H.modify
-                    (\s -> s
-                      { loading = false
-                      , userStatuses = (mergeFaces faces s.userStatuses)
-                      })
-                  pure next
       SignIn next -> do
         { password, userId } <- H.get
         H.modify (_ { loading = true })
@@ -293,7 +255,39 @@ button =
               (Just map) -> do
                 let m = lookup "secret" map
                 H.modify (_ { loading = false, secret = m })
-                pure next
+                -- get faces
+                { password, secret, userId, userStatuses } <- H.get
+                H.modify (_ { loading = true })
+                facesMaybe <- lift $ Request.getFaces { password, secret, userId }
+                case facesMaybe of
+                  Nothing -> do
+                    H.modify (_ { loading = false })
+                    pure next
+                  (Just faces) -> do
+                    let
+                      unknownFaces =
+                        filter
+                          (\(ClientFaceWithTime { userId }) ->
+                            eq 0 $ length $ filter
+                              (\({ user: (ClientUser { id: u }) }) -> u == userId)
+                              userStatuses
+                          )
+                          faces
+                    if length unknownFaces > 0
+                        then do
+                          H.modify
+                            (\s -> s
+                              { loading = false
+                              , userStatuses = []
+                              })
+                          pure next -- TODO
+                        else do
+                          H.modify
+                            (\s -> s
+                              { loading = false
+                              , userStatuses = (mergeFaces faces s.userStatuses)
+                              })
+                          pure next
       StartCapture next -> do
         _ <- lift $ start
         H.modify (_ { isCapturing = true })
