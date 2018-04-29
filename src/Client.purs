@@ -47,7 +47,6 @@ type State =
   , label :: String
   , loading :: Boolean
   , password :: String
-  , secret :: Maybe String
   , signedInUser :: Maybe { password :: String, userId :: String }
   , userId :: String
   , userStatuses :: Array ClientUserStatus
@@ -100,7 +99,6 @@ button =
       , label
       , loading: false
       , password: "pass1"
-      , secret: Nothing
       , signedInUser: Nothing
       , userId: "user1"
       , userStatuses: []
@@ -253,10 +251,10 @@ button =
                 H.modify (_ { loading = false })
                 pure next
               (Just map) -> do
-                let m = lookup "secret" map
-                H.modify (_ { loading = false, secret = m })
+                let secret = lookup "secret" map
+                H.modify (_ { loading = false })
                 -- get faces
-                { password, secret, userId, userStatuses } <- H.get
+                { password, userId, userStatuses } <- H.get
                 H.modify (_ { loading = true })
                 facesMaybe <- lift $ Request.getFaces { password, secret, userId }
                 case facesMaybe of
