@@ -14,8 +14,10 @@ import Control.Monad.Eff.Ref (REF)
 import DOM (DOM)
 import Data.Argonaut (decodeJson, jsonParser)
 import Data.Array (filter, find)
+import Data.ClientFaceWithTime (ClientFaceWithTime(..))
+import Data.ClientUser (ClientUser(..))
 import Data.Either (Either(..), either)
-import Data.FaceWithTime (FaceWithTime(..))
+import Data.Foldable (length)
 import Data.Function (const, id)
 import Data.Maybe (Maybe(..), isNothing, maybe)
 import Data.NaturalTransformation (type (~>))
@@ -25,9 +27,7 @@ import Data.Tuple (Tuple(..))
 import Data.URL (URL(..), parseUrlWithQuery)
 import Data.UUID (parseUUID)
 import Data.Unit (Unit)
-import Data.User (User(..))
 import Data.UserId (UserId(..))
-import Data.UserStatus (UserStatus(..))
 import Graphics.Canvas (CANVAS)
 import Halogen (ClassName(..), lift, liftEff)
 import Halogen as H
@@ -37,8 +37,13 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.Driver (runUI)
 import Network.HTTP.Affjax as AX
-import Prelude (discard, eq, not, show, ($))
+import Prelude (discard, eq, not, show, ($), (==), (>))
 import Video (MEDIA, VIDEO)
+
+type ClientUserStatus =
+  { fwt :: Maybe ClientFaceWithTime
+  , user :: ClientUser
+  }
 
 type State =
   { isCapturing :: Boolean
@@ -46,9 +51,9 @@ type State =
   , loading :: Boolean
   , password :: String
   , secret :: Maybe String
-  , signedInUser :: Maybe {  password :: String, userId :: String }
+  , signedInUser :: Maybe { password :: String, userId :: String }
   , userId :: String
-  , users :: Array UserStatus
+  , userStatuses :: Array ClientUserStatus
   }
 
 data Query a
@@ -62,6 +67,14 @@ data Query a
 
 data Message = Toggled Boolean
 type Input = String
+
+mergeFaces
+  :: Array ClientFaceWithTime -> Array ClientUserStatus -> Array ClientUserStatus
+mergeFaces faces userStatuses =
+  (\s -> s { fwt = (fwt s.user) }) <$> userStatuses
+  where
+    fwt (ClientUser { id }) =
+      find (\(ClientFaceWithTime { userId }) -> userId == id) faces
 
 button
   :: forall e
@@ -95,7 +108,7 @@ button =
       , secret: Nothing
       , signedInUser: Nothing
       , userId: "user1"
-      , users: []
+      , userStatuses: []
       }
 
     render :: State -> H.ComponentHTML Query
@@ -111,22 +124,18 @@ button =
             [ HH.div [ HP.class_ $ ClassName "label"] [ HH.text l ]
             , HH.div [ HP.class_ $ ClassName "value"] [ HH.img [ HP.src v ] ]
             ]
-        isMe (UserStatus { user }) =
-          let (User { id }) = user
-              (UserId id') = id in
+        isMe ({ user: ClientUser { id: (UserId id') } }) =
           maybe false (eq id') $ parseUUID state.userId
-        me = find isMe state.users
-        others = filter (not $ isMe) state.users
+        me = find isMe state.userStatuses
+        others = filter (not $ isMe) state.userStatuses
         userStatus
-          ( UserStatus
-            { fwt
-            , user: (User { id: userId, name: userName })
-            }
-          ) =
+          { fwt
+          , user: (ClientUser { id: userId, name: userName })
+          } =
             [ landv "user-id" "UserId" $ show userId
             , landv "user-name" "UserName" $ userName
-            , landimg "face" "Face" $ maybe "" (\(FaceWithTime { face }) -> show face) fwt
-            , landv "time" "Time" $ maybe "" (\(FaceWithTime { time }) -> show time) fwt
+            , landimg "face" "Face" $ maybe "" (\(ClientFaceWithTime { face }) -> show face) fwt
+            , landv "time" "Time" $ maybe "" (\(ClientFaceWithTime { time }) -> show time) fwt
             ]
         renderMe me' =
           HH.div
@@ -225,7 +234,7 @@ button =
           )
     eval = case _ of
       LoadRequest next -> do
-        { password, secret, userId } <- H.get
+        { password, secret, userId, userStatuses } <- H.get
         H.modify (_ { loading = true })
         let params =
               [ Tuple "password" $ Just password
@@ -236,9 +245,26 @@ button =
           Nothing -> pure next
           (Just (URL url)) -> do
             response <- H.liftAff $ AX.get url
-            let users = either (const []) id $ decodeJson response.response
-            H.modify (_ { loading = false, users = users })
-            pure next
+            let faces :: Array ClientFaceWithTime
+                faces = either (const []) id $ decodeJson response.response
+                unknownFaces =
+                  filter
+                    (\(ClientFaceWithTime { userId }) ->
+                      eq 0 $ length $ filter
+                        (\({ user: (ClientUser { id: u }) }) -> u == userId)
+                        userStatuses
+                    )
+                    faces
+            if length unknownFaces > 0
+                then do
+                  pure next -- TODO
+                else do
+                  H.modify
+                    (\s -> s
+                      { loading = false
+                      , userStatuses = mergeFaces faces s.userStatuses
+                      })
+                  pure next
       SignIn next -> do
         { password, userId } <- H.get
         H.modify (_ { loading = true })
@@ -250,8 +276,13 @@ button =
           Nothing -> pure next
           (Just (URL url)) -> do
             response <- H.liftAff $ AX.get url
-            let users = either (const []) id $ decodeJson response.response :: Either String (Array (StrMap String))
-            H.modify (_ { loading = false, signedInUser = Just { password, userId } })
+            let users :: Array ClientUser
+                users = either (const []) id $ decodeJson response.response
+            H.modify
+              (_ { loading = false
+                 , signedInUser = Just { password, userId }
+                 , userStatuses = (\user -> { fwt: Nothing, user }) <$> users
+                 })
             pure next
       Snapshot next -> do
         dataUrl <- H.liftEff $ snapshot
