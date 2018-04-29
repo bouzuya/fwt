@@ -50,7 +50,7 @@ getFaces { password, secret, userId } = runMaybeT do
       ]
   (URL url) <- MaybeT $ pure $ parseUrlWithQuery "/faces" params
   response <- liftAff $ AX.get url
-  pure $ either (const []) id $ decodeJson response.response
+  MaybeT $ pure $ either (const Nothing) Just $ decodeJson response.response
 
 getUsers
   :: forall e
@@ -64,4 +64,4 @@ getUsers { password, userId } = runMaybeT do
       ]
   (URL url) <- MaybeT $ pure $ parseUrlWithQuery "/users" params
   response <- liftAff $ AX.get url
-  pure $ either (const []) id $ decodeJson response.response
+  MaybeT $ pure $ either (const Nothing) Just $ decodeJson response.response
