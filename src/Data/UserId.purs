@@ -4,6 +4,7 @@ import Control.Applicative (pure)
 import Control.Bind (bind)
 import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, fromString)
 import Data.Either (Either(..))
+import Data.Eq (class Eq, eq)
 import Data.Function (($))
 import Data.Maybe (maybe)
 import Data.Show (class Show, show)
@@ -19,6 +20,9 @@ instance decodeJsonUserId :: DecodeJson UserId where
 
 instance encodeJsonUserId :: EncodeJson UserId where
   encodeJson (UserId uuid) = fromString $ show uuid
+
+instance eqUserId :: Eq UserId where
+  eq (UserId a) (UserId b) = eq a b
 
 derive newtype instance showUserId :: Show UserId
 
