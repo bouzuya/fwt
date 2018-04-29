@@ -7,11 +7,11 @@ import Control.Monad.Eff.Ref (REF, Ref, modifyRef, readRef)
 import Data.Argonaut (class DecodeJson, decodeJson, jsonParser, (.?))
 import Data.Array (findIndex, modifyAt)
 import Data.Either (Either(..), either)
-import Data.FaceWithTime (FaceWithTime(..), fwt)
+import Data.FaceWithTime (FaceWithTime(..))
 import Data.Foldable (find)
 import Data.Function (const, flip, ($))
 import Data.Functor ((<$>))
-import Data.Maybe (Maybe(..), isJust, maybe)
+import Data.Maybe (Maybe(..), maybe)
 import Data.Show (show)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.URL (url)
@@ -106,10 +106,10 @@ updateUser ref user (UpdateUserBody { face }) = do
   case
     modify'
       (\(UserStatus { user: user' }) -> user == user')
-      (\(UserStatus { user }) ->
+      (\(UserStatus { user: user' }) ->
           UserStatus
-            { user
-            , fwt: (\f -> fwt { face: f, secret: "abc", time }) <$> url face -- TODO: generate secret
+            { user: user'
+            , fwt: (\f -> FaceWithTime { face: f, secret: "abc", time }) <$> url face -- TODO: generate secret
             })
       users of
     Nothing -> pure Nothing
@@ -130,8 +130,8 @@ handleGetUsersAction ref query = do
     then Tuple statusOK (UsersView users)
     else Tuple statusForbidden ForbiddenView
   where
-    authenticate query users = maybe false (const true) $
-      credentials query >>= (flip authenticatedUser users)
+    authenticate q u = maybe false (const true) $
+      credentials q >>= (flip authenticatedUser u)
 
 handleGetFacesAction
   :: forall e. Ref State
@@ -143,8 +143,8 @@ handleGetFacesAction ref query =  do
     then Tuple statusOK (FacesView users)
     else Tuple statusForbidden ForbiddenView
   where
-    authenticate query users = maybe false (const true) $
-      credentials query >>= (flip authenticatedUser users)
+    authenticate q u = maybe false (const true) $
+      credentials q >>= (flip authenticatedUser u)
 
 handleCreateFaceAction
   :: forall e. Ref State
@@ -165,17 +165,17 @@ handleCreateFaceAction ref query body = do
             (Just _) -> Tuple statusOK OKView
   where
     auth :: Array UserStatus -> Query -> Either (Tuple Status View) UserStatus
-    auth users query =
+    auth users q =
       maybe
         (Left $ Tuple statusForbidden ForbiddenView)
         Right
-        (credentials query >>= (flip authenticatedUser users))
+        (credentials q >>= (flip authenticatedUser users))
     params :: String -> Either (Tuple Status View) UpdateUserBody
-    params body =
+    params b =
       either
         (const $ Left $ Tuple statusBadRequest BadRequestView)
         Right
-        ((jsonParser body >>= decodeJson) :: Either String UpdateUserBody)
+        ((jsonParser b >>= decodeJson) :: Either String UpdateUserBody)
 
 handleDefaultAction :: forall e. Eff e (Tuple Status View)
 handleDefaultAction = pure $ Tuple statusNotFound ErrorView

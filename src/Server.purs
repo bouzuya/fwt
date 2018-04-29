@@ -11,7 +11,7 @@ import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Now (NOW, now)
 import Control.Monad.Eff.Ref (REF, Ref, newRef)
 import Data.Either (either)
-import Data.FaceWithTime (fwt)
+import Data.FaceWithTime (FaceWithTime(..))
 import Data.Function (const, id, ($))
 import Data.Functor ((<$>))
 import Data.Maybe (Maybe(..))
@@ -100,8 +100,8 @@ app =
   :>>= \conn -> Tuple conn.components.ref <$> getActionWithBody
   :>>= \(Tuple ref action') -> (lift' $ liftEff $ doAction ref action')
   :>>= \(Tuple status view) -> (lift' $ liftEff $ Tuple status <$> fromString (show view) UTF8)
-  :>>= \(Tuple status buf) ->
-    writeStatus status
+  :>>= \(Tuple status' buf) ->
+    writeStatus status'
     :*> closeHeaders
     :*> (respond buf)
 
@@ -130,7 +130,7 @@ main = do
         face <- url "https://bouzuya.net/images/bouzuya-icon-v3.png"
         secret <- pure $ "abc" -- TODO: generate secret
         time <- pure $ instant'
-        pure $ fwt { face, secret, time }
+        pure $ FaceWithTime { face, secret, time }
   log $ show fwt'
   -- TODO: test route
   -- TODO: extract app handler

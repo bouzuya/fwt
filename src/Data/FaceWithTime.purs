@@ -1,4 +1,4 @@
-module Data.FaceWithTime (FaceWithTime(..), fwt, toIso8601) where
+module Data.FaceWithTime (FaceWithTime(..), toIso8601) where
 
 import Control.Bind (bind, pure, (<$>), (>>=))
 import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson, fromObject, fromString, stringify, (.?))
@@ -61,6 +61,3 @@ toIso8601 i = format formatter $ toDateTime i
       , SecondsTwoDigits
       ]
     formatter = fromFoldable $ dateTimeFormat <> [Placeholder "Z"]
-
-fwt :: { face :: URL, secret :: String, time :: Instant } -> FaceWithTime
-fwt = FaceWithTime
