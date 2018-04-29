@@ -6,7 +6,8 @@ import Data.Functor ((<$>))
 import Data.Show (class Show)
 import Data.StrMap (fromFoldable) as StrMap
 import Data.Tuple (Tuple(..))
-import Data.UserStatus (UserStatus)
+import Data.UserStatus (UserStatus(..))
+import Data.UserView (UserView(..))
 import Halogen.HTML (HTML(..), PlainHTML)
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
@@ -35,7 +36,8 @@ instance encodeJsonView :: EncodeJson View where
     [ Tuple "status" $ fromString "NotFound" ]
   encodeJson OKView = fromObject $ StrMap.fromFoldable
     [ Tuple "status" $ fromString "OK" ]
-  encodeJson (UsersView xs) = fromArray $ encodeJson <$> UserStatusView <$> xs
+  encodeJson (UsersView xs) =
+    fromArray $ encodeJson <$> (\(UserStatus { user }) -> UserView user) <$> xs
 
 indexView :: PlainHTML
 indexView = HH.html []
