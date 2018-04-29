@@ -1,8 +1,12 @@
-module Data.User (User(User)) where
+module Data.User
+  ( User(User)
+  , toClient
+  ) where
 
 import Control.Applicative (pure)
 import Control.Bind (bind)
 import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson, fromObject, fromString, stringify, (.?))
+import Data.ClientUser (ClientUser(..))
 import Data.Eq (class Eq, eq)
 import Data.Function (($))
 import Data.Show (class Show)
@@ -37,3 +41,7 @@ instance eqUser :: Eq User where
 
 instance showUser :: Show User where
   show user = stringify $ encodeJson user
+
+toClient :: User -> ClientUser
+toClient (User { id, name }) =
+  ClientUser { id, name }

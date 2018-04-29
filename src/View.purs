@@ -1,22 +1,22 @@
 module View (View(..)) where
 
-import Data.Argonaut (class EncodeJson, encodeJson, fromArray, fromObject, fromString, stringify)
+import Data.Argonaut (class EncodeJson, encodeJson)
+import Data.Argonaut as Json
 import Data.Array (catMaybes)
 import Data.FaceWithTime (FaceWithTime)
+import Data.FaceWithTime as FaceWithTime
 import Data.Function (($))
 import Data.Functor ((<$>))
 import Data.Show (class Show)
-import Data.StrMap (fromFoldable) as StrMap
+import Data.StrMap as StrMap
 import Data.Tuple (Tuple(..))
 import Data.User (User)
+import Data.User as User
 import Data.UserStatus (UserStatus(..))
-import Data.UserView (UserView(..))
 import Halogen.HTML (HTML(..), PlainHTML)
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.DOM.StringRenderer (render)
-import View.FaceSubView (FaceSubView(..))
-import View.FaceWithSecretView (FaceWithSecretView(..))
 
 data View
   = BadRequestView
@@ -36,21 +36,37 @@ users :: Array UserStatus -> Array User
 users userStatuses = (\(UserStatus { user }) -> user) <$> userStatuses
 
 instance encodeJsonView :: EncodeJson View where
-  encodeJson BadRequestView = fromObject $ StrMap.fromFoldable
-    [ Tuple "status" $ fromString "BadRequest" ]
-  encodeJson ErrorView = fromObject $ StrMap.fromFoldable
-    [ Tuple "status" $ fromString "ERROR" ]
-  encodeJson (FaceView fwt) = encodeJson $ FaceWithSecretView fwt
-  encodeJson (FacesView xs) = fromArray $ encodeJson <$> FaceSubView <$> faces xs
-  encodeJson ForbiddenView = fromObject $ StrMap.fromFoldable
-    [ Tuple "status" $ fromString "Forbidden" ]
-  encodeJson IndexView = fromObject $ StrMap.fromFoldable
-    [ Tuple "status" $ fromString "Index" ]
-  encodeJson NotFoundView = fromObject $ StrMap.fromFoldable
-    [ Tuple "status" $ fromString "NotFound" ]
-  encodeJson OKView = fromObject $ StrMap.fromFoldable
-    [ Tuple "status" $ fromString "OK" ]
-  encodeJson (UsersView xs) = fromArray $ encodeJson <$> UserView <$> users xs
+  encodeJson BadRequestView =
+    Json.fromObject $
+      StrMap.fromFoldable
+        [ Tuple "status" $ Json.fromString "BadRequest" ]
+  encodeJson ErrorView =
+    Json.fromObject $
+      StrMap.fromFoldable
+        [ Tuple "status" $ Json.fromString "ERROR" ]
+  encodeJson (FaceView fwt) =
+    encodeJson fwt -- with secret
+  encodeJson (FacesView xs) =
+    Json.fromArray $
+      encodeJson <$> FaceWithTime.toClient <$> faces xs
+  encodeJson ForbiddenView =
+    Json.fromObject $
+      StrMap.fromFoldable
+        [ Tuple "status" $ Json.fromString "Forbidden" ]
+  encodeJson IndexView =
+    Json.fromObject $
+      StrMap.fromFoldable
+        [ Tuple "status" $ Json.fromString "Index" ]
+  encodeJson NotFoundView =
+    Json.fromObject $
+      StrMap.fromFoldable
+        [ Tuple "status" $ Json.fromString "NotFound" ]
+  encodeJson OKView =
+    Json.fromObject $
+      StrMap.fromFoldable
+        [ Tuple "status" $ Json.fromString "OK" ]
+  encodeJson (UsersView xs) =
+    Json.fromArray $ encodeJson <$> User.toClient <$> users xs
 
 indexView :: PlainHTML
 indexView = HH.html []
@@ -82,4 +98,4 @@ instance showView :: Show View where
   show IndexView =
     let (HTML vdom) = indexView in
     render renderWidget vdom
-  show x = stringify $ encodeJson x
+  show x = Json.stringify $ encodeJson x

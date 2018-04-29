@@ -9,7 +9,7 @@ import Control.Monad.Aff (Aff)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.AVar (AVAR)
 import Control.Monad.Eff.Console (CONSOLE, log)
-import Control.Monad.Eff.Exception (EXCEPTION)
+import Control.Monad.Eff.Exception (EXCEPTION, throw)
 import Control.Monad.Eff.Ref (REF)
 import DOM (DOM)
 import Data.Argonaut (decodeJson, jsonParser)
@@ -257,12 +257,17 @@ button =
                     faces
             if length unknownFaces > 0
                 then do
+                  H.modify
+                    (\s -> s
+                      { loading = false
+                      , userStatuses = []
+                      })
                   pure next -- TODO
                 else do
                   H.modify
                     (\s -> s
                       { loading = false
-                      , userStatuses = mergeFaces faces s.userStatuses
+                      , userStatuses = (mergeFaces faces s.userStatuses)
                       })
                   pure next
       SignIn next -> do

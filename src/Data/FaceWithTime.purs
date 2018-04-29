@@ -1,9 +1,11 @@
 module Data.FaceWithTime
   ( FaceWithTime(..)
+  , toClient
   ) where
 
 import Control.Bind (bind, pure)
 import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson, fromObject, fromString, stringify, (.?))
+import Data.ClientFaceWithTime (ClientFaceWithTime(..))
 import Data.FWTTime (FWTTime)
 import Data.Function (($))
 import Data.Show (class Show)
@@ -39,3 +41,7 @@ instance encodeJsonFaceWithTime :: EncodeJson FaceWithTime where
 
 instance showFaceWithTime :: Show FaceWithTime where
   show fwt = stringify $ encodeJson fwt
+
+toClient :: FaceWithTime -> ClientFaceWithTime
+toClient (FaceWithTime { face, time, userId }) =
+  ClientFaceWithTime { face, time, userId }
