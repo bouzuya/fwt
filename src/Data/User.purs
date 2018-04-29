@@ -3,6 +3,7 @@ module Data.User (User(User)) where
 import Control.Applicative (pure)
 import Control.Bind (bind)
 import Data.Argonaut (class DecodeJson, class EncodeJson, decodeJson, encodeJson, fromObject, fromString, stringify, (.?))
+import Data.Eq (class Eq, eq)
 import Data.Function (($))
 import Data.Show (class Show)
 import Data.StrMap (fromFoldable) as StrMap
@@ -30,6 +31,9 @@ instance encodeJsonUser :: EncodeJson User where
     , Tuple "name" $ fromString name
     , Tuple "password" $ fromString password
     ]
+
+instance eqUser :: Eq User where
+  eq (User { id: a }) (User { id: b }) = eq a b
 
 instance showUser :: Show User where
   show user = stringify $ encodeJson user
