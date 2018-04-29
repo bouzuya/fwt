@@ -12,6 +12,7 @@ import Data.FaceWithTime (FaceWithTime(..))
 import Data.Foldable (find)
 import Data.Function (const, flip, ($))
 import Data.Functor ((<$>))
+import Data.FWTTime as FWTTime
 import Data.Maybe (Maybe(..), maybe)
 import Data.Show (show)
 import Data.Tuple (Tuple(..), fst, snd)
@@ -99,12 +100,13 @@ getUserStatuses ref = do
 createFaceWithTime
   :: forall e
   . String
+  -> UserId
   -> Eff (now :: NOW, uuid :: GENUUID | e) (Maybe FaceWithTime)
-createFaceWithTime face = runMaybeT do
+createFaceWithTime face userId = runMaybeT do
   secret <- lift $ show <$> genUUID
-  time <- lift now
+  time <- lift $ FWTTime.fromInstant <$> now
   faceUrl <- MaybeT $ pure $ parseUrl face
-  pure $ FaceWithTime { face: faceUrl, secret, time }
+  pure $ FaceWithTime { face: faceUrl, secret, time, userId }
 
 updateUser
   :: forall e
@@ -118,8 +120,8 @@ updateUser
       | e
       )
       (Maybe FaceWithTime)
-updateUser ref user (UpdateUserBody { face }) = runMaybeT do
-  fwt <- MaybeT $ createFaceWithTime face
+updateUser ref user@(User { id: userId }) (UpdateUserBody { face }) = runMaybeT do
+  fwt <- MaybeT $ createFaceWithTime face userId
   { users } <- lift $ readRef ref
   newUsers <-
     MaybeT $ pure $ modify'

@@ -1,5 +1,6 @@
 module Data.FWTTime
   ( FWTTime
+  , fromInstant
   ) where
 
 import Control.Bind (bind, pure)
@@ -28,6 +29,9 @@ instance encodeJsonFWTTime :: EncodeJson FWTTime where
 
 instance showFWTTime :: Show FWTTime where
   show t = toIso8601 t
+
+fromInstant :: Instant -> FWTTime
+fromInstant = FWTTime
 
 toIso8601 :: FWTTime -> String
 toIso8601 (FWTTime i) = format formatter $ Instant.toDateTime i

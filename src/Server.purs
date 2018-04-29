@@ -11,6 +11,7 @@ import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Now (NOW, now)
 import Control.Monad.Eff.Ref (REF, Ref, newRef)
 import Data.Either (either)
+import Data.FWTTime as FWTTime
 import Data.FaceWithTime (FaceWithTime(..))
 import Data.Function (const, id, ($))
 import Data.Functor ((<$>))
@@ -126,13 +127,14 @@ main = do
   log $ show $ user1
   log $ show $ user2
   log $ show $ user3
-  instant' <- now
+  instant' <- FWTTime.fromInstant <$> now
   fwtSecret <- show <$> genUUID
   let fwt' = do
         face <- URL.parseUrl "https://bouzuya.net/images/bouzuya-icon-v3.png"
         secret <- pure $ fwtSecret
         time <- pure $ instant'
-        pure $ FaceWithTime { face, secret, time }
+        let (User { id: userId }) = user1
+        pure $ FaceWithTime { face, secret, time, userId }
   log $ show fwt'
   -- TODO: test route
   -- TODO: extract app handler

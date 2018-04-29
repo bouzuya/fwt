@@ -10,11 +10,14 @@ import Data.Show (class Show)
 import Data.StrMap (fromFoldable) as StrMap
 import Data.Tuple (Tuple(..))
 import Data.URL (URL)
+import Data.UserId (UserId)
 
 newtype FaceWithTime = FaceWithTime
   { face :: URL
   , secret :: String
-  , time :: FWTTime }
+  , time :: FWTTime
+  , userId :: UserId
+  }
 
 instance decodeJsonFaceWithTime :: DecodeJson FaceWithTime where
   decodeJson json = do
@@ -22,14 +25,16 @@ instance decodeJsonFaceWithTime :: DecodeJson FaceWithTime where
     face <- o .? "face"
     secret <- o .? "secret"
     time <- o .? "time"
-    pure $ FaceWithTime { face, secret, time }
+    userId <- o .? "user_id"
+    pure $ FaceWithTime { face, secret, time, userId }
 
 instance encodeJsonFaceWithTime :: EncodeJson FaceWithTime where
-  encodeJson (FaceWithTime { face, secret, time }) =
+  encodeJson (FaceWithTime { face, secret, time, userId }) =
     fromObject $ StrMap.fromFoldable
       [ Tuple "face" $ encodeJson face
       , Tuple "secret" $ fromString secret
       , Tuple "time" $ encodeJson time
+      , Tuple "user_id" $ encodeJson userId
       ]
 
 instance showFaceWithTime :: Show FaceWithTime where
