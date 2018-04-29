@@ -22,7 +22,7 @@ import Data.NaturalTransformation (type (~>))
 import Data.Semigroup ((<>))
 import Data.StrMap (StrMap, lookup)
 import Data.Tuple (Tuple(..))
-import Data.URL (URL(..), urlWithQuery)
+import Data.URL (URL(..), parseUrlWithQuery)
 import Data.UUID (parseUUID)
 import Data.Unit (Unit)
 import Data.User (User(..))
@@ -232,7 +232,7 @@ button =
               , Tuple "secret" $ secret
               , Tuple "user_id" $ Just userId
               ]
-        case (urlWithQuery "/faces" params) of
+        case (parseUrlWithQuery "/faces" params) of
           Nothing -> pure next
           (Just (URL url)) -> do
             response <- H.liftAff $ AX.get url
@@ -246,7 +246,7 @@ button =
               [ Tuple "password" $ Just password
               , Tuple "user_id" $ Just userId
               ]
-        case (urlWithQuery "/users" params) of
+        case (parseUrlWithQuery "/users" params) of
           Nothing -> pure next
           (Just (URL url)) -> do
             response <- H.liftAff $ AX.get url
@@ -264,7 +264,7 @@ button =
                   [ Tuple "password" $ Just password
                   , Tuple "user_id" $ Just userId
                   ]
-            case (urlWithQuery "/faces" params) of
+            case (parseUrlWithQuery "/faces" params) of
               Nothing -> pure next
               (Just (URL url)) -> do
                 response <- H.liftAff $ AX.post url ("{\"face\":\"" <> face <> "\"}")

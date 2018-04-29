@@ -1,7 +1,7 @@
 module Data.URL
   ( URL(..)
-  , url
-  , urlWithQuery
+  , parseUrl
+  , parseUrlWithQuery
   ) where
 
 import Control.Applicative (pure)
@@ -29,11 +29,11 @@ instance encodeJsonURL :: EncodeJson URL where
 instance showURL :: Show URL where
   show (URL u) = u
 
-url :: String -> Maybe URL
-url = Just <$> URL -- TODO
+parseUrl :: String -> Maybe URL
+parseUrl = Just <$> URL -- TODO
 
-urlWithQuery :: String -> Array (Tuple String (Maybe String)) -> Maybe URL
-urlWithQuery url' query = Just <$> URL $ url' <> "?" <> qs
+parseUrlWithQuery :: String -> Array (Tuple String (Maybe String)) -> Maybe URL
+parseUrlWithQuery url' query = Just <$> URL $ url' <> "?" <> qs
   where
     f (Tuple k Nothing) = encodeURIComponent k <> "="
     f (Tuple k (Just v)) = encodeURIComponent k <> "=" <> encodeURIComponent v

@@ -15,7 +15,7 @@ import Data.Functor ((<$>))
 import Data.Maybe (Maybe(..), maybe)
 import Data.Show (show)
 import Data.Tuple (Tuple(..), fst, snd)
-import Data.URL (url)
+import Data.URL (parseUrl)
 import Data.UUID (GENUUID, genUUID)
 import Data.User (User(User))
 import Data.UserId (UserId(..))
@@ -103,7 +103,7 @@ createFaceWithTime
 createFaceWithTime face = runMaybeT do
   secret <- lift $ show <$> genUUID
   time <- lift now
-  faceUrl <- MaybeT $ pure $ url face
+  faceUrl <- MaybeT $ pure $ parseUrl face
   pure $ FaceWithTime { face: faceUrl, secret, time }
 
 updateUser

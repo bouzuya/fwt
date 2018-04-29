@@ -18,7 +18,7 @@ import Data.Maybe (Maybe(..))
 import Data.Semigroup ((<>))
 import Data.Show (show)
 import Data.Tuple (Tuple(..))
-import Data.URL (url)
+import Data.URL as URL
 import Data.UUID (GENUUID, genUUID)
 import Data.User (User(User))
 import Data.UserId (userId)
@@ -129,7 +129,7 @@ main = do
   instant' <- now
   fwtSecret <- show <$> genUUID
   let fwt' = do
-        face <- url "https://bouzuya.net/images/bouzuya-icon-v3.png"
+        face <- URL.parseUrl "https://bouzuya.net/images/bouzuya-icon-v3.png"
         secret <- pure $ fwtSecret
         time <- pure $ instant'
         pure $ FaceWithTime { face, secret, time }
