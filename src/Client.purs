@@ -55,8 +55,8 @@ type State =
 
 data Query a
   = SignIn a
+  | SignOut a
   | Snapshot a
-  | StopCapture a
   | UpdatePassword String a
   | UpdateUserId String a
 
@@ -140,7 +140,7 @@ button =
             then
               [ HH.div
                 [ HP.classes [ ClassName "stop-button" ]
-                , HE.onClick (HE.input_ StopCapture)
+                , HE.onClick (HE.input_ SignOut)
                 ]
                 [ HH.text "STOP" ]
               , HH.div
@@ -236,6 +236,10 @@ button =
             _ <- lift $ start
             H.modify (_ { isCapturing = true })
             pure next
+      SignOut next -> do
+        _ <- H.liftEff $ stop
+        H.modify (_ { isCapturing = false, signedInUser = Nothing })
+        pure next
       Snapshot next -> do
         dataUrl <- H.liftEff $ snapshot
         case dataUrl of
@@ -284,10 +288,6 @@ button =
                               , userStatuses = (mergeFaces faces s.userStatuses)
                               })
                           pure next
-      StopCapture next -> do
-        _ <- H.liftEff $ stop
-        H.modify (_ { isCapturing = false })
-        pure next
       UpdatePassword password next -> do
         H.modify (\s -> s { password = password })
         pure next
