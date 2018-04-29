@@ -13,11 +13,11 @@ import Control.Monad.Eff.Exception (EXCEPTION)
 import Control.Monad.Eff.Ref (REF)
 import DOM (DOM)
 import Data.Argonaut (decodeJson, jsonParser)
-import Data.Array (filter, find, length)
+import Data.Array (filter, find)
 import Data.Either (Either(..), either)
 import Data.FaceWithTime (FaceWithTime(..), toIso8601)
 import Data.Function (const, id)
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..), isNothing, maybe)
 import Data.NaturalTransformation (type (~>))
 import Data.Semigroup ((<>))
 import Data.StrMap (StrMap, lookup)
@@ -46,12 +46,14 @@ type State =
   , loading :: Boolean
   , password :: String
   , secret :: Maybe String
+  , signedInUser :: Maybe {  password :: String, userId :: String }
   , userId :: String
   , users :: Array UserStatus
   }
 
 data Query a
   = LoadRequest a
+  | SignIn a
   | Snapshot a
   | StartCapture a
   | StopCapture a
@@ -91,6 +93,7 @@ button =
       , loading: false
       , password: "pass1"
       , secret: Nothing
+      , signedInUser: Nothing
       , userId: "user1"
       , users: []
       }
@@ -163,42 +166,49 @@ button =
             ]
           ] <> (maybe [] userStatus me')
       in
-        HH.div []
-        [ HH.label []
-          [ HH.span [] [ HH.text "user id" ]
-          , HH.input
-            [ HE.onValueChange (HE.input UpdateUserId)
-            , HP.type_ HP.InputText
-            , HP.value state.userId
-            ]
-          ]
-        , HH.label []
-          [ HH.span [] [ HH.text "password" ]
-          , HH.input
-            [ HE.onValueChange (HE.input UpdatePassword)
-            , HP.type_ HP.InputPassword
-            , HP.value state.password
-            ]
-          ]
-        , HH.button
-          [ HE.onClick (HE.input_ LoadRequest)
-          ]
-          [ HH.text "LOAD" ]
-        , HH.span []
-          [ if state.loading then HH.text "LOADING..." else HH.text ""
-          ]
-        , HH.span [] [ HH.text $ show $ length state.users]
-        , HH.ul [] $
-          [ HH.li [] [ renderMe me ]
-          ] <>
-          ( (\user ->
-              HH.li []
-              [ HH.div [ HP.class_ $ ClassName "user-status" ] (userStatus user)
+        if isNothing state.signedInUser
+          then
+            HH.div []
+            [ HH.label []
+              [ HH.span [] [ HH.text "user id" ]
+              , HH.input
+                [ HE.onValueChange (HE.input UpdateUserId)
+                , HP.type_ HP.InputText
+                , HP.value state.userId
+                ]
               ]
-            ) <$> others
-          )
-        ]
-
+            , HH.label []
+              [ HH.span [] [ HH.text "password" ]
+              , HH.input
+                [ HE.onValueChange (HE.input UpdatePassword)
+                , HP.type_ HP.InputPassword
+                , HP.value state.password
+                ]
+              ]
+            , HH.button
+              [ HE.onClick (HE.input_ SignIn)
+              ]
+              [ HH.text "SIGN IN" ]
+            , HH.span []
+              [ if state.loading then HH.text "LOADING..." else HH.text ""
+              ]
+            ]
+          else
+            HH.div []
+            [ HH.button
+              [ HE.onClick (HE.input_ LoadRequest)
+              ]
+              [ HH.text "LOAD" ]
+            , HH.ul [] $
+              [ HH.li [] [ renderMe me ]
+              ] <>
+              ( (\user ->
+                  HH.li []
+                  [ HH.div [ HP.class_ $ ClassName "user-status" ] (userStatus user)
+                  ]
+                ) <$> others
+              )
+            ]
     eval
       :: Query
       ~> H.ComponentDSL
@@ -228,6 +238,20 @@ button =
             response <- H.liftAff $ AX.get url
             let users = either (const []) id $ decodeJson response.response
             H.modify (_ { loading = false, users = users })
+            pure next
+      SignIn next -> do
+        { password, userId } <- H.get
+        H.modify (_ { loading = true })
+        let params =
+              [ Tuple "password" $ Just password
+              , Tuple "user_id" $ Just userId
+              ]
+        case (urlWithQuery "/users" params) of
+          Nothing -> pure next
+          (Just (URL url)) -> do
+            response <- H.liftAff $ AX.get url
+            let users = either (const []) id $ decodeJson response.response :: Either String (Array (StrMap String))
+            H.modify (_ { loading = false, signedInUser = Just { password, userId } })
             pure next
       Snapshot next -> do
         dataUrl <- H.liftEff $ snapshot
