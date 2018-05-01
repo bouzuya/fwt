@@ -251,6 +251,7 @@ button =
             -- start capture
             _ <- lift $ start
             H.modify (_ { isCapturing = true })
+            -- TODO: start timer
             pure next
       SignOut next -> do
         _ <- H.liftEff $ stop
@@ -272,7 +273,7 @@ button =
                 let secret = lookup "secret" map
                 H.modify (_ { loading = false })
                 -- get faces
-                { password, userId, userStatuses } <- H.get
+                { userStatuses } <- H.get
                 H.modify (_ { loading = true })
                 facesMaybe <- lift $ Request.getFaces { password, secret, userId }
                 case facesMaybe of
@@ -283,9 +284,9 @@ button =
                     let
                       unknownFaces =
                         filter
-                          (\(ClientFaceWithTime { userId }) ->
+                          (\(ClientFaceWithTime { userId: u' }) ->
                             eq 0 $ length $ filter
-                              (\({ user: (ClientUser { id: u }) }) -> u == userId)
+                              (\({ user: (ClientUser { id: u }) }) -> u == u')
                               userStatuses
                           )
                           faces
