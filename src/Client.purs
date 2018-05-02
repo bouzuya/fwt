@@ -5,7 +5,7 @@ module Client
 import Capture (snapshot, start, stop)
 import Control.Applicative (pure, (<$>))
 import Control.Bind (bind)
-import Control.Monad.Aff (Aff)
+import Control.Monad.Aff (Aff, Milliseconds(..), delay)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.AVar (AVAR)
 import Control.Monad.Eff.Console (CONSOLE, log)
@@ -79,6 +79,7 @@ button
       (Aff
         ( ajax :: AX.AJAX
         , canvas :: CANVAS
+        , console :: CONSOLE
         , media :: MEDIA
         , video :: VIDEO
         | e
@@ -228,6 +229,7 @@ button =
           (Aff
             ( ajax :: AX.AJAX
             , canvas :: CANVAS
+            , console :: CONSOLE
             , media :: MEDIA
             , video :: VIDEO
             | e
@@ -252,6 +254,9 @@ button =
             _ <- lift $ start
             H.modify (_ { isCapturing = true })
             -- TODO: start timer
+            _ <- H.fork do
+              H.liftAff (delay (Milliseconds 1000.0))
+              liftEff $ log "delay hello"
             pure next
       SignOut next -> do
         _ <- H.liftEff $ stop
