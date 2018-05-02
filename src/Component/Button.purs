@@ -124,32 +124,6 @@ button =
             , landimg "face" "Face" $ maybe "" (\(ClientFaceWithTime { face }) -> show face) fwt
             , landv "time" "Time" $ maybe "" (\(ClientFaceWithTime { time }) -> show time) fwt
             ]
-        renderMe me' =
-          HH.div
-          [ HP.classes [ ClassName "capture" ] ] $
-          [ HH.div [ HP.classes [ ClassName "controls" ] ]
-            if state.isCapturing
-            then
-              [ HH.div
-                [ HP.classes [ ClassName "snapshot-button" ]
-                , HE.onClick (HE.input_ Snapshot)
-                ]
-                [ HH.text "SNAPSHOT" ]
-              ]
-            else
-              []
-          , HH.video
-            [ HP.autoplay true
-            , HP.height 320
-            , HP.id_ "video"
-            , HP.width 320
-            ] []
-          , HH.canvas
-            [ HP.height 640
-            , HP.id_ "canvas"
-            , HP.width 640
-            ]
-          ] <> (maybe [] userStatus me')
       in
         HH.div []
         [ HH.label []
@@ -184,11 +158,38 @@ button =
               HH.ul [] []
             else
               HH.ul [] $
-              [ HH.li [] [ renderMe me ]
+              [ HH.li []
+                [ HH.div
+                  [ HP.classes [ ClassName "capture" ] ] $
+                  [ HH.div [ HP.classes [ ClassName "controls" ] ]
+                    if state.isCapturing
+                    then
+                      [ HH.div
+                        [ HP.classes [ ClassName "snapshot-button" ]
+                        , HE.onClick (HE.input_ Snapshot)
+                        ]
+                        [ HH.text "SNAPSHOT" ]
+                      ]
+                    else
+                      []
+                  , HH.video
+                    [ HP.autoplay true
+                    , HP.height 320
+                    , HP.id_ "video"
+                    , HP.width 320
+                    ] []
+                  , HH.canvas
+                    [ HP.height 640
+                    , HP.id_ "canvas"
+                    , HP.width 640
+                    ]
+                  ] <> (maybe [] userStatus me)
+                ]
               ] <>
               ( (\user ->
                   HH.li []
-                  [ HH.div [ HP.class_ $ ClassName "user-status" ] (userStatus user)
+                  [ HH.div [ HP.class_ $ ClassName "user-status" ]
+                    (userStatus user)
                   ]
                 ) <$> others
               )
