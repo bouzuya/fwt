@@ -53,7 +53,7 @@ data Query a
   | UpdatePassword String a
   | UpdateUserId String a
 
-data Message = Toggled Boolean
+type Message = Unit
 type Input = Unit
 
 mergeFaces
