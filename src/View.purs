@@ -13,7 +13,7 @@ import Data.Tuple (Tuple(..))
 import Data.User (User)
 import Data.User as User
 import Data.UserStatus (UserStatus(..))
-import Halogen.HTML (HTML(..), PlainHTML)
+import Halogen.HTML (ClassName(..), HTML(..), PlainHTML)
 import Halogen.HTML as HH
 import Halogen.HTML.Properties as HP
 import Halogen.VDom.DOM.StringRenderer (render)
@@ -81,7 +81,7 @@ indexView = HH.html []
   , HH.body []
     [ HH.div []
       [ HH.header [] [ HH.h1 [] [ HH.text "fwt" ] ]
-      , HH.div [] [ HH.p [] [ HH.text "index" ] ]
+      , HH.div [ HP.classes [ ClassName "app" ] ] []
       , HH.footer []
         [ HH.address []
           [ HH.a [ HP.href "https://bouzuya.net/" ] [ HH.text "bouzuya" ] ]
