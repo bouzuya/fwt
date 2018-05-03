@@ -5,10 +5,12 @@ module Component.Button
   ) where
 
 import Capture (snapshot, start, stop)
-import Control.Applicative (pure, (<$>))
+import Control.Applicative (pure, void, (<$>))
 import Control.Bind (bind)
 import Control.Monad.Aff (Aff, Milliseconds(..), delay)
+import Control.Monad.Eff.AVar (AVAR)
 import Control.Monad.Eff.Console (CONSOLE, log)
+import Control.Monad.Eff.Timer (TIMER, clearTimeout, setTimeout)
 import Data.Array (filter, find)
 import Data.ClientFaceWithTime (ClientFaceWithTime(..))
 import Data.ClientUser (ClientUser(..))
@@ -22,11 +24,12 @@ import Data.UUID (parseUUID)
 import Data.Unit (Unit)
 import Data.UserId (UserId(..))
 import Graphics.Canvas (CANVAS)
-import Halogen (ClassName(..), lift, liftEff)
+import Halogen (ClassName(..), SubscribeStatus, lift, liftEff)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Halogen.Query.EventSource as HES
 import Network.HTTP.Affjax as AX
 import Prelude (discard, eq, not, show, ($), (==), (>))
 import Request as Request
@@ -50,6 +53,7 @@ data Query a
   = SignIn a
   | SignOut a
   | Snapshot a
+  | Tick (SubscribeStatus -> a)
   | UpdatePassword String a
   | UpdateUserId String a
 
@@ -73,9 +77,11 @@ button
       Message
       (Aff
         ( ajax :: AX.AJAX
+        , avar :: AVAR
         , canvas :: CANVAS
         , console :: CONSOLE
         , media :: MEDIA
+        , timer :: TIMER
         , video :: VIDEO
         | e
         )
@@ -206,9 +212,11 @@ button =
           Message
           (Aff
             ( ajax :: AX.AJAX
+            , avar :: AVAR
             , canvas :: CANVAS
             , console :: CONSOLE
             , media :: MEDIA
+            , timer :: TIMER
             , video :: VIDEO
             | e
             )
@@ -232,6 +240,13 @@ button =
             _ <- lift $ start
             H.modify (_ { isCapturing = true })
             -- TODO: start timer
+            H.subscribe $
+              HES.eventSource_'
+                (\e -> do
+                  id <- setTimeout 1000 e
+                  pure $ void $ clearTimeout id
+                )
+                (H.request Tick)
             _ <- H.fork do
               H.liftAff (delay (Milliseconds 1000.0))
               liftEff $ log "delay hello"
@@ -288,6 +303,9 @@ button =
                               , userStatuses = (mergeFaces faces s.userStatuses)
                               })
                           pure next
+      Tick next -> do
+        liftEff $ log "Tick"
+        pure $ next HES.Done
       UpdatePassword password next -> do
         H.modify (\s -> s { password = password })
         pure next

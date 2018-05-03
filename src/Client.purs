@@ -9,6 +9,7 @@ import Control.Monad.Eff.AVar (AVAR)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Exception (EXCEPTION)
 import Control.Monad.Eff.Ref (REF)
+import Control.Monad.Eff.Timer (TIMER)
 import DOM (DOM)
 import Data.Unit (Unit, unit)
 import Graphics.Canvas (CANVAS)
@@ -26,6 +27,7 @@ main :: forall e. Eff ( ajax :: AJAX
                       , dom :: DOM
                       , exception :: EXCEPTION
                       , media :: MEDIA
+                      , timer :: TIMER
                       , ref :: REF
                       , video :: VIDEO
                       | e
