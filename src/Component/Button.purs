@@ -10,13 +10,13 @@ import Control.Bind (bind, (=<<))
 import Control.Monad.Aff (Aff)
 import Control.Monad.Eff.AVar (AVAR)
 import Control.Monad.Eff.Console (CONSOLE, log)
-import Control.Monad.Eff.Timer (TIMER, clearTimeout, setTimeout)
+import Control.Monad.Eff.Timer (TIMER, setTimeout)
 import Control.Monad.Maybe.Trans (MaybeT(..), runMaybeT)
 import Data.Array (filter, find)
 import Data.ClientFaceWithTime (ClientFaceWithTime(..))
 import Data.ClientUser (ClientUser(..))
 import Data.Foldable (length)
-import Data.Function (const)
+import Data.Function (const, (<<<))
 import Data.Maybe (Maybe(..), isNothing, maybe)
 import Data.NaturalTransformation (type (~>))
 import Data.Semigroup ((<>))
@@ -290,10 +290,7 @@ button =
             H.modify (_ { isCapturing = true })
             H.subscribe $
               HES.eventSource_'
-                (\e -> do
-                  id <- setTimeout 1000 e
-                  pure $ void $ clearTimeout id
-                )
+                (pure <<< void <<< setTimeout 1000)
                 (H.request Tick)
             pure next
       SignOut next -> do
@@ -311,10 +308,7 @@ button =
             snapshot'
             H.subscribe $
               HES.eventSource_'
-                (\e -> do
-                  id <- setTimeout 10000 e
-                  pure $ void $ clearTimeout id
-                )
+                (pure <<< void <<< setTimeout 10000)
                 (H.request Tick)
           else pure unit
         pure $ next HES.Done
