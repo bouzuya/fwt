@@ -2,7 +2,7 @@ module Client
   ( main
   ) where
 
-import Component.Button (button)
+import Component.App (app)
 import Control.Bind (bind)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.AVar (AVAR)
@@ -36,4 +36,4 @@ main :: forall e. Eff ( ajax :: AJAX
 main = runHalogenAff do
   liftEff $ log "Hello!"
   body <- awaitBody
-  runUI button unit body
+  runUI app unit body

@@ -1,7 +1,7 @@
-module Component.Button
+module Component.App
   ( Query
   , Message
-  , button
+  , app
   ) where
 
 import Capture (snapshot, start, stop)
@@ -117,7 +117,7 @@ snapshot' = (maybe (H.modify (_ { loading = false })) pure) =<< runMaybeT do
       })
   pure unit
 
-button
+app
   :: forall e
   . H.Component
       HH.HTML
@@ -135,7 +135,7 @@ button
         | e
         )
       )
-button =
+app =
   H.component
     { initialState
     , render
