@@ -6,8 +6,8 @@ module Component.Button
 
 import Capture (snapshot, start, stop)
 import Control.Applicative (pure, void, (<$>))
-import Control.Bind (bind, (=<<), (>>=))
-import Control.Monad.Aff (Aff, Milliseconds(..), delay)
+import Control.Bind (bind, (=<<))
+import Control.Monad.Aff (Aff)
 import Control.Monad.Eff.AVar (AVAR)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Timer (TIMER, clearTimeout, setTimeout)
@@ -17,7 +17,7 @@ import Data.ClientFaceWithTime (ClientFaceWithTime(..))
 import Data.ClientUser (ClientUser(..))
 import Data.Foldable (length)
 import Data.Function (const)
-import Data.Maybe (Maybe(..), fromMaybe, isNothing, maybe)
+import Data.Maybe (Maybe(..), isNothing, maybe)
 import Data.NaturalTransformation (type (~>))
 import Data.Semigroup ((<>))
 import Data.StrMap (lookup)
@@ -32,7 +32,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.Query.EventSource as HES
 import Network.HTTP.Affjax as AX
-import Prelude (Void, discard, eq, not, show, ($), (==), (>))
+import Prelude (discard, eq, not, show, ($), (==), (>))
 import Request as Request
 import Video (MEDIA, VIDEO)
 
@@ -288,7 +288,6 @@ button =
             -- start capture
             _ <- lift $ start
             H.modify (_ { isCapturing = true })
-            -- TODO: start timer
             H.subscribe $
               HES.eventSource_'
                 (\e -> do
@@ -296,9 +295,6 @@ button =
                   pure $ void $ clearTimeout id
                 )
                 (H.request Tick)
-            _ <- H.fork do
-              H.liftAff (delay (Milliseconds 1000.0))
-              liftEff $ log "delay hello"
             pure next
       SignOut next -> do
         _ <- H.liftEff $ stop
@@ -309,6 +305,18 @@ button =
         pure next
       Tick next -> do
         liftEff $ log "Tick"
+        { isCapturing } <- H.get
+        if isCapturing
+          then do
+            snapshot'
+            H.subscribe $
+              HES.eventSource_'
+                (\e -> do
+                  id <- setTimeout 10000 e
+                  pure $ void $ clearTimeout id
+                )
+                (H.request Tick)
+          else pure unit
         pure $ next HES.Done
       UpdatePassword password next -> do
         H.modify (\s -> s { password = password })
