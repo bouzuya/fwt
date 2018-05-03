@@ -6,22 +6,23 @@ module Component.Button
 
 import Capture (snapshot, start, stop)
 import Control.Applicative (pure, void, (<$>))
-import Control.Bind (bind)
+import Control.Bind (bind, (=<<), (>>=))
 import Control.Monad.Aff (Aff, Milliseconds(..), delay)
 import Control.Monad.Eff.AVar (AVAR)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Timer (TIMER, clearTimeout, setTimeout)
+import Control.Monad.Maybe.Trans (MaybeT(..), runMaybeT)
 import Data.Array (filter, find)
 import Data.ClientFaceWithTime (ClientFaceWithTime(..))
 import Data.ClientUser (ClientUser(..))
 import Data.Foldable (length)
 import Data.Function (const)
-import Data.Maybe (Maybe(..), isNothing, maybe)
+import Data.Maybe (Maybe(..), fromMaybe, isNothing, maybe)
 import Data.NaturalTransformation (type (~>))
 import Data.Semigroup ((<>))
 import Data.StrMap (lookup)
 import Data.UUID (parseUUID)
-import Data.Unit (Unit)
+import Data.Unit (Unit, unit)
 import Data.UserId (UserId(..))
 import Graphics.Canvas (CANVAS)
 import Halogen (ClassName(..), SubscribeStatus, lift, liftEff)
@@ -31,7 +32,7 @@ import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import Halogen.Query.EventSource as HES
 import Network.HTTP.Affjax as AX
-import Prelude (discard, eq, not, show, ($), (==), (>))
+import Prelude (Void, discard, eq, not, show, ($), (==), (>))
 import Request as Request
 import Video (MEDIA, VIDEO)
 
@@ -67,6 +68,54 @@ mergeFaces faces userStatuses =
   where
     fwt (ClientUser { id }) =
       find (\(ClientFaceWithTime { userId }) -> userId == id) faces
+
+snapshot'
+  :: forall e
+  . H.ComponentDSL
+      State
+      Query
+      Message
+      (Aff
+        ( ajax :: AX.AJAX
+        , avar :: AVAR
+        , canvas :: CANVAS
+        , console :: CONSOLE
+        , media :: MEDIA
+        , timer :: TIMER
+        , video :: VIDEO
+        | e
+        )
+      )
+      Unit
+snapshot' = (maybe (H.modify (_ { loading = false })) pure) =<< runMaybeT do
+  face <- MaybeT $ H.liftEff $ snapshot
+  { password, userId } <- H.get
+  H.modify (_ { loading = true })
+  map <- MaybeT $ lift $ Request.createFace { password, userId } face
+  let secret = lookup "secret" map
+  H.modify (_ { loading = false })
+  -- get faces
+  { userStatuses } <- H.get
+  H.modify (_ { loading = true })
+  faces <- MaybeT $ lift $ Request.getFaces { password, secret, userId }
+  let
+    unknownFaces =
+      filter
+        (\(ClientFaceWithTime { userId: u' }) ->
+          eq 0 $ length $ filter
+            (\({ user: (ClientUser { id: u }) }) -> u == u')
+            userStatuses
+        )
+        faces
+  H.modify
+    (\s -> s
+      { loading = false
+      , userStatuses =
+          if length unknownFaces > 0
+          then []
+          else mergeFaces faces s.userStatuses
+      })
+  pure unit
 
 button
   :: forall e
@@ -256,53 +305,8 @@ button =
         H.modify (_ { isCapturing = false, signedInUser = Nothing })
         pure next
       Snapshot next -> do
-        dataUrl <- H.liftEff $ snapshot
-        case dataUrl of
-          Nothing -> pure next
-          (Just face) -> do
-            { password, userId } <- H.get
-            H.modify (_ { loading = true })
-            faceMaybe <- lift $ Request.createFace { password, userId } face
-            case faceMaybe of
-              Nothing -> do
-                H.modify (_ { loading = false })
-                pure next
-              (Just map) -> do
-                let secret = lookup "secret" map
-                H.modify (_ { loading = false })
-                -- get faces
-                { userStatuses } <- H.get
-                H.modify (_ { loading = true })
-                facesMaybe <- lift $ Request.getFaces { password, secret, userId }
-                case facesMaybe of
-                  Nothing -> do
-                    H.modify (_ { loading = false })
-                    pure next
-                  (Just faces) -> do
-                    let
-                      unknownFaces =
-                        filter
-                          (\(ClientFaceWithTime { userId: u' }) ->
-                            eq 0 $ length $ filter
-                              (\({ user: (ClientUser { id: u }) }) -> u == u')
-                              userStatuses
-                          )
-                          faces
-                    if length unknownFaces > 0
-                        then do
-                          H.modify
-                            (\s -> s
-                              { loading = false
-                              , userStatuses = []
-                              })
-                          pure next -- TODO
-                        else do
-                          H.modify
-                            (\s -> s
-                              { loading = false
-                              , userStatuses = (mergeFaces faces s.userStatuses)
-                              })
-                          pure next
+        snapshot'
+        pure next
       Tick next -> do
         liftEff $ log "Tick"
         pure $ next HES.Done
