@@ -15,9 +15,10 @@ import Control.Monad.Maybe.Trans (MaybeT(..), runMaybeT)
 import Control.Monad.Trans.Class (lift)
 import Data.Argonaut (decodeJson, jsonParser)
 import Data.Either (either)
+import Data.Formatter.Parser.Number (parseInteger)
 import Data.Function (const, id, ($))
 import Data.Functor ((<$>))
-import Data.Maybe (Maybe(..), maybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Semigroup ((<>))
 import Data.Show (show)
 import Data.StrMap (StrMap)
@@ -32,7 +33,7 @@ import Hyper.Conn (Conn)
 import Hyper.Middleware (Middleware, lift')
 import Hyper.Middleware.Class (getConn)
 import Hyper.Node.FileServer (fileServer)
-import Hyper.Node.Server (HttpRequest, HttpResponse, defaultOptionsWithLogging, runServer)
+import Hyper.Node.Server (HttpRequest, HttpResponse, Port(..), defaultOptionsWithLogging, runServer)
 import Hyper.Request (RequestData, getRequestData, parseUrl, readBody)
 import Hyper.Response (ResponseEnded, StatusLineOpen, closeHeaders, respond, writeStatus)
 import Node.Buffer (BUFFER, fromString)
@@ -42,6 +43,7 @@ import Node.HTTP (HTTP)
 import Node.Process (PROCESS, cwd, lookupEnv)
 import Prelude (Unit, bind, (=<<))
 import Route (Action, route)
+import Text.Parsing.Parser (runParser)
 
 type State = { users :: Array UserStatus }
 type Components = { ref :: Ref State }
@@ -162,8 +164,13 @@ main :: forall e. Eff ( avar :: AVAR
 main = do
   loaded <- loadUserStatuses
   users <- maybe (throwException (error "no users")) pure loaded
+  portStringMaybe <- lookupEnv "PORT"
+  let
+    portInt = fromMaybe 3000 do
+      portString <- portStringMaybe
+      either (const Nothing) Just (runParser portString parseInteger)
   ref <- newRef { users }
   let components = { ref }
   currentDirectory <- cwd
-  runServer defaultOptionsWithLogging components $
+  runServer (defaultOptionsWithLogging { port = (Port portInt) }) components $
     fileServer (currentDirectory <> "/public") app
