@@ -3,23 +3,27 @@ module Server (main) where
 import Action (doAction)
 import Control.Applicative (pure)
 import Control.IxMonad ((:*>), (:>>=))
-import Control.Monad.Aff (Aff)
+import Control.Monad.Aff (Aff, error)
 import Control.Monad.Aff.AVar (AVAR)
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Class (liftEff)
-import Control.Monad.Eff.Console (CONSOLE, log)
-import Control.Monad.Eff.Now (NOW, now)
+import Control.Monad.Eff.Console (CONSOLE)
+import Control.Monad.Eff.Exception (EXCEPTION, throwException)
+import Control.Monad.Eff.Now (NOW)
 import Control.Monad.Eff.Ref (REF, Ref, newRef)
+import Control.Monad.Maybe.Trans (MaybeT(..), runMaybeT)
+import Control.Monad.Trans.Class (lift)
+import Data.Argonaut (decodeJson, jsonParser)
 import Data.Either (either)
-import Data.FWTTime as FWTTime
-import Data.FaceWithTime (FaceWithTime(..))
 import Data.Function (const, id, ($))
 import Data.Functor ((<$>))
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), maybe)
 import Data.Semigroup ((<>))
 import Data.Show (show)
+import Data.StrMap (StrMap)
+import Data.StrMap as StrMap
+import Data.Traversable (sequence)
 import Data.Tuple (Tuple(..))
-import Data.URL as URL
 import Data.UUID (GENUUID, genUUID)
 import Data.User (User(User))
 import Data.UserId (userId)
@@ -35,8 +39,8 @@ import Node.Buffer (BUFFER, fromString)
 import Node.Encoding (Encoding(..))
 import Node.FS (FS)
 import Node.HTTP (HTTP)
-import Node.Process (PROCESS, cwd)
-import Prelude (Unit, bind, discard)
+import Node.Process (PROCESS, cwd, lookupEnv)
+import Prelude (Unit, bind, (=<<))
 import Route (Action, route)
 
 type State = { users :: Array UserStatus }
@@ -107,9 +111,45 @@ app =
     :*> closeHeaders
     :*> (respond buf)
 
+parseUsers :: String -> Maybe (Array { name :: String, password :: String })
+parseUsers json = do
+  usersMap <- maps json
+  usersRecord <- sequence $ mapToRecord <$> usersMap
+  pure usersRecord
+  where
+    maps :: String -> Maybe (Array (StrMap String))
+    maps s = either (const Nothing) Just $ decodeJson =<< jsonParser s
+    mapToRecord :: StrMap String -> Maybe { name :: String, password :: String }
+    mapToRecord map = do
+      name <- StrMap.lookup "name" map
+      password <- StrMap.lookup "password" map
+      pure { name, password }
+
+recordToUserStatus
+  :: forall e
+  . { name :: String, password :: String }
+  -> Eff (uuid :: GENUUID | e) UserStatus
+recordToUserStatus { name, password } = do
+  user <- User <$> ({ id: _, name, password }) <$> (userId <$> genUUID)
+  pure $ UserStatus { fwt: Nothing, user }
+
+loadUserStatuses
+  :: forall e
+  . Eff
+    ( process :: PROCESS
+    , uuid :: GENUUID
+    | e
+    )
+    (Maybe (Array UserStatus))
+loadUserStatuses = runMaybeT do
+  json <- MaybeT $ lookupEnv "FWT_USERS"
+  records <- MaybeT $ pure $ parseUsers json
+  lift $ sequence $ recordToUserStatus <$> records
+
 main :: forall e. Eff ( avar :: AVAR
                       , buffer :: BUFFER
                       , console :: CONSOLE
+                      , exception :: EXCEPTION
                       , fs :: FS
                       , http :: HTTP
                       , now :: NOW
@@ -120,28 +160,8 @@ main :: forall e. Eff ( avar :: AVAR
                       )
                       Unit
 main = do
-  -- TODO: test data
-  user1 <- User <$> ({ id: _, name: "user1", password: "pass1" }) <$> (userId <$> genUUID)
-  user2 <- User <$> ({ id: _, name: "user2", password: "pass2" }) <$> (userId <$> genUUID)
-  user3 <- User <$> ({ id: _, name: "user3", password: "pass3" }) <$> (userId <$> genUUID)
-  log $ show $ user1
-  log $ show $ user2
-  log $ show $ user3
-  instant' <- FWTTime.fromInstant <$> now
-  fwtSecret <- show <$> genUUID
-  let fwt' = do
-        face <- URL.parseUrl "https://bouzuya.net/images/bouzuya-icon-v3.png"
-        secret <- pure $ fwtSecret
-        time <- pure $ instant'
-        let (User { id: userId }) = user1
-        pure $ FaceWithTime { face, secret, time, userId }
-  log $ show fwt'
-  -- TODO: test route
-  -- TODO: extract app handler
-  let users =
-        [ UserStatus { user: user1, fwt: fwt' }
-        , UserStatus { user: user2, fwt: Nothing }
-        ]
+  loaded <- loadUserStatuses
+  users <- maybe (throwException (error "no users")) pure loaded
   ref <- newRef { users }
   let components = { ref }
   currentDirectory <- cwd
