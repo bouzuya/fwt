@@ -37,11 +37,13 @@
     "build:client": "npm-run-all -p 'build:client:*'",
     "build:client:scripts": "pulp browserify --main Client --optimise --to public/scripts/index.js",
     "build:client:styles": "lessc styles/index.less public/styles/index.css",
-    "build:server": "pulp build --main Server --optimise",
+    "build:server": "pulp build --main Server",
     "clean": "rimraf .pulp-cache output",
     "prepare": "npm-run-all -s bower:install clean build",
     "repl": "pulp repl",
     "start": "node --eval \"require('./output/Server').main();\"",
-    "test": "pulp test"
+    "test": "pulp test",
+    "watch": "npm-run-all -p 'watch:*'",
+    "watch:server": "pulp --watch build --main Server"
   }
 }
