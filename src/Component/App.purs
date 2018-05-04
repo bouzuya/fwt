@@ -161,7 +161,14 @@ app =
         me = find isMe state.userStatuses
         others = filter (not $ isMe) state.userStatuses
       in
-        HH.div [ HP.classes [ ClassName "app" ] ]
+        HH.div
+        [ HP.classes
+          ([ ClassName "app" ] <>
+            if isNothing state.signedInUser
+              then []
+              else [ ClassName "is-signed-in" ]
+          )
+        ]
         [ HH.div [ HP.classes [ ClassName "credentials" ] ]
           [ HH.label []
             [ HH.span [ HP.classes [ ClassName "label" ] ]

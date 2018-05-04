@@ -15,8 +15,13 @@
 }
 
 .app() {
+  &.is-signed-in {
+    > .credentials {
+      .size(auto, 8px);
+    }
+  }
   > .credentials {
-    .size(auto, 8px);
+    .size(auto, 48px);
     background-color: @color-white;
     line-height: 48px;
     overflow: hidden;
@@ -27,7 +32,16 @@
     }
     > label {
       > .label {
-        padding: 0 8px 0 0;
+        padding: 0 8px;
+      }
+      > .value {
+        > input {
+          border: 1px solid fade(@color-black, 50%);
+          height: 24px;
+          line-height: 24px;
+          padding: 0 8px;
+          width: 96px;
+        }
       }
     }
   }
