@@ -16,10 +16,15 @@
 
 .app() {
   > .credentials {
-    .size(auto, 48px);
+    .size(auto, 8px);
     background-color: @color-white;
     line-height: 48px;
+    overflow: hidden;
     padding: 0 0 0 48px;
+    transition: height 0.3s ease;
+    &:hover {
+      .size(auto, 48px);
+    }
     > label {
       > .label {
         padding: 0 8px 0 0;
@@ -166,6 +171,7 @@
   .size(48px, 48px);
   background-color: @color-white;
   line-height: 48px;
+  z-index: 4;
   > h1 {
     font-size: 100%;
     font-weight: normal;
@@ -177,10 +183,15 @@
 
 .footer() {
   .position(fixed, auto, auto, 0, auto);
-  .size(100%, 48px);
+  .size(100%, 8px);
   background-color: @color-white;
   line-height: 48px;
+  overflow: hidden;
   text-align: center;
+  transition: height 0.3s ease;
+  &:hover {
+    .size(100%, 48px);
+  }
   > address {
     font-style: normal;
     > span {
