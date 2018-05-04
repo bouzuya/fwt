@@ -1,5 +1,6 @@
 @color-black: rgb(5, 5, 5);
 @color-green: rgb(78, 106, 65);
+@color-pure-white: rgb(255, 255, 255);
 @color-white: rgb(250, 250, 250);
 .position(@position, @top, @right, @bottom, @left) {
   position: @position;
@@ -36,12 +37,35 @@
       }
       > .value {
         > input {
+          background-color: @color-pure-white;
           border: 1px solid fade(@color-black, 50%);
+          box-shadow: inset 0 0 4px fade(@color-black, 10%);
           height: 24px;
           line-height: 24px;
           padding: 0 8px;
           width: 96px;
+          &:focus {
+            border: 1px solid @color-black;
+            box-shadow: unset;
+          }
         }
+      }
+    }
+    > button {
+      background-color: @color-pure-white;
+      border: 1px solid fade(@color-black, 50%);
+      box-shadow: 0 0 4px fade(@color-black, 10%);
+      cursor: pointer;
+      height: 24px;
+      margin: 8px;
+      &:focus {
+        border: 1px solid @color-black;
+      }
+      &:hover {
+        box-shadow: 0 0 4px fade(@color-black, 30%);
+      }
+      &:active {
+        box-shadow: unset;
       }
     }
   }
