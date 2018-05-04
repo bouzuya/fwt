@@ -1,0 +1,2 @@
+FWT_USERS=[{"name":"user1","password":"pass1"}]
+PORT=3000
