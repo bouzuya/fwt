@@ -327,7 +327,7 @@ app =
             H.subscribe $
               HES.eventSource_'
                 (\e -> do
-                  id <- setTimeout 10000 e
+                  id <- setTimeout 300000 e
                   pure $ void $ clearTimeout id
                 )
                 (H.request Tick)
