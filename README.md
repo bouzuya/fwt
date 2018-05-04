@@ -6,6 +6,10 @@ Inspired by ~~[Sqwiggle](https://sqwiggle.com/)~~ and [sneek](https://sneek.io/)
 
 Roughly speaking, `setInterval(() => takePhotoOfYourFaceAndShare(), 300000);`. In other words, this is sneek.io without talking feature.
 
+## Screenshot
+
+![screenshot](https://user-images.githubusercontent.com/1221346/39620059-d6c94378-4fc4-11e8-9107-015769a61a86.png)
+
 ## How to run
 
 ```sh
