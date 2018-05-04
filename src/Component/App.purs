@@ -21,9 +21,7 @@ import Data.Maybe (Maybe(..), isNothing, maybe)
 import Data.NaturalTransformation (type (~>))
 import Data.Semigroup ((<>))
 import Data.StrMap (lookup)
-import Data.UUID (parseUUID)
 import Data.Unit (Unit, unit)
-import Data.UserId (UserId(..))
 import Graphics.Canvas (CANVAS)
 import Halogen (ClassName(..), SubscribeStatus, lift, liftEff)
 import Halogen as H
@@ -156,8 +154,7 @@ app =
     render :: State -> H.ComponentHTML Query
     render state =
       let
-        isMe ({ user: ClientUser { id: (UserId id') } }) =
-          maybe false (eq id') $ parseUUID state.userId
+        isMe ({ user: ClientUser { name } }) = name == state.userId
         me = find isMe state.userStatuses
         others = filter (not $ isMe) state.userStatuses
       in

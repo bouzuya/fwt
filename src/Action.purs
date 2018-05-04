@@ -63,9 +63,9 @@ authenticatedUser
 authenticatedUser { password, userId } users =
   find
     (\(UserStatus
-      { user: (User { id: (UserId uuid), password: p })
+      { user: (User { name, password: p })
       }) ->
-        show uuid == userId && p == password
+        name == userId && p == password
     )
     users
 
