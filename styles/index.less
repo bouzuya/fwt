@@ -1,3 +1,6 @@
+@color-black: rgb(5, 5, 5);
+@color-green: rgb(78, 106, 65);
+@color-white: rgb(250, 250, 250);
 .position(@position, @top, @right, @bottom, @left) {
   position: @position;
   top: @top;
@@ -11,104 +14,202 @@
   height: @height;
 }
 
-.user-status() {
-  > .user-id {
-    display: none;
-  }
-  > .user-name {
-    .position(absolute, auto, auto, 0, 0);
-    .size(100%, auto);
-    background-color: fade(@color-black, 70%);
-    display: block;
-    padding: 8px;
-    z-index: 2;
-    > .label {
-      display: none;
-    }
-    > .value {
-      color: fade(@color-white, 70%);
+.app() {
+  > .credentials {
+    .size(auto, 48px);
+    background-color: @color-white;
+    line-height: 48px;
+    padding: 0 0 0 48px;
+    > label {
+      > .label {
+        padding: 0 8px 0 0;
+      }
     }
   }
-  > .face {
+  > ul {
+    background-color: @color-black;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    > li {
+      .position(relative, auto, auto, auto, auto);
+      .size(320px, 320px);
+      > .capture {
+        .position(absolute, 0, auto, auto, 0);
+        .size(320px, 320px);
+        overflow: hidden;
+        &:hover {
+          > .controls {
+            > .snapshot-button {
+              background-color: fade(@color-black, 10%);
+              &::before {
+                border-color: fade(@color-white, 70%);
+              }
+            }
+          }
+          > canvas {
+            display: none;
+          }
+          > video {
+            display: block;
+          }
+        }
+        > .controls {
+          > .snapshot-button {
+            .position(absolute, 0, 0, 0, 0);
+            background-color: transparent;
+            color: transparent; // hide text
+            cursor: pointer;
+            z-index: 3;
+            &::before {
+              .position(absolute, 50%, auto, auto, 50%);
+              .size(48px, 48px);
+              border-radius: 50%;
+              border: 4px solid transparent;
+              content: "";
+              display: block;
+              margin: -24px 0 0 -24px;
+            }
+            &:active {
+              &::before {
+                border-color: fade(@color-white, 100%);
+              }
+            }
+          }
+        }
+        > video {
+          .position(absolute, 0, auto, auto, 0);
+          display: none;
+          object-fit: cover;
+          object-position: 50% 50%;
+          transform: scaleX(-1);
+          z-index: 2;
+        }
+        > canvas {
+          .position(absolute, 0, auto, auto, 0);
+          display: block;
+          transform: scaleX(-1);
+          width: 100%;
+          z-index: 2;
+        }
+      }
+      > .user-status {
+        .size(320px, 320px);
+        overflow: hidden;
+        position: relative;
+        > .user-id {
+          display: none;
+        }
+        > .user-name {
+          .position(absolute, auto, auto, 0, 0);
+          .size(100%, auto);
+          background-color: fade(@color-black, 70%);
+          display: block;
+          padding: 8px;
+          z-index: 2;
+          > .label {
+            display: none;
+          }
+          > .value {
+            color: fade(@color-white, 70%);
+          }
+        }
+        > .face {
+          .position(absolute, 0, auto, auto, 0);
+          > .label {
+            display: none;
+          }
+          > .value > img {
+            transform: scaleX(-1);
+            width: 100%;
+          }
+        }
+        > .time {
+          .position(absolute, auto, 0, 0, auto);
+          display: block;
+          padding: 8px;
+          z-index: 2;
+          > .label {
+            display: none;
+          }
+          > .value {
+            color: fade(@color-white, 70%);
+          }
+        }
+      }
+    }
+  }
+  > .throbber {
+    @keyframes blink {
+      0% {
+        background-color: fade(@color-white, 0%);
+      }
+      100% {
+        background-color: fade(@color-white, 100%);
+      }
+    }
     .position(absolute, 0, auto, auto, 0);
-    > .label {
-      display: none;
-    }
-    > .value > img {
-      transform: scaleX(-1);
-      width: 100%;
-    }
-  }
-  > .time {
-    .position(absolute, auto, 0, 0, auto);
-    display: block;
-    padding: 8px;
+    .size(48px, 48px);
+    background-color: fade(@color-white, 0%);
     z-index: 2;
-    > .label {
-      display: none;
-    }
-    > .value {
-      color: fade(@color-white, 70%);
+    &.is-show {
+      animation: blink 0.3s linear 1s alternate infinite none running;
     }
   }
 }
 
-@color-black: rgb(0, 0, 0);
-@color-green: rgb(78, 106, 65);
-@color-white: rgb(255, 255, 255);
-body {
-  margin: 0;
-  padding: 0;
+.header() {
+  .position(fixed, 0, auto, auto, 0);
+  .size(48px, 48px);
+  background-color: @color-white;
+  line-height: 48px;
+  > h1 {
+    font-size: 100%;
+    font-weight: normal;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+  }
 }
 
-ul {
-  list-style-type: none;
-  display: flex;
-  margin: 0;
-  padding: 0;
-}
-
-.capture {
-  .position(relative, auto, auto, auto, auto);
-  .size(320px, 320px);
-  .user-status();
-  overflow: hidden;
-  &:hover {
-    > canvas {
-      display: none;
-    }
-    > video {
+.footer() {
+  .position(fixed, auto, auto, 0, auto);
+  .size(100%, 48px);
+  background-color: @color-white;
+  line-height: 48px;
+  text-align: center;
+  > address {
+    font-style: normal;
+    > span {
       display: block;
+      line-height: 24px;
+      > .label {
+        padding: 0 8px 0 0;
+      }
     }
-  }
-  > .controls {
-    > .snapshot-button {
-      .position(absolute, 0, 0, 0, 0);
-      background-color: face(@color-white, 30%);
-      cursor: pointer;
-      z-index: 3;
-    }
-  }
-  > video {
-    .position(absolute, 0, auto, auto, 0);
-    display: none;
-    object-fit: cover;
-    object-position: 50% 50%;
-    transform: scaleX(-1);
-    z-index: 2;
-  }
-  > canvas {
-    .position(absolute, 0, auto, auto, 0);
-    display: block;
-    transform: scaleX(-1);
-    width: 100%;
-    z-index: 2;
   }
 }
 
-.user-status {
-  .size(320px, 320px);
-  .user-status();
-  overflow: hidden;
-  position: relative;
+html {
+  > body {
+    background-color: @color-black;
+    margin: 0;
+    padding: 0;
+    > div {
+      > header {
+        .header();
+      }
+      > .body {
+        > .app {
+          .app();
+        }
+      }
+      > footer {
+        .footer();
+      }
+    }
+  }
 }

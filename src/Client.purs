@@ -39,6 +39,6 @@ main :: forall e. Eff ( ajax :: AJAX
 main = runHalogenAff do
   liftEff $ log "Hello!"
   awaitLoad
-  appMaybe <- selectElement (QuerySelector ".app")
-  appElement <- maybe (throwError (error "Could not find .app")) pure appMaybe
+  appMaybe <- selectElement (QuerySelector ".body")
+  appElement <- maybe (throwError (error "Could not find .body")) pure appMaybe
   runUI app unit appElement

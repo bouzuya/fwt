@@ -156,64 +156,53 @@ app =
     render :: State -> H.ComponentHTML Query
     render state =
       let
-        landv c l v =
-          HH.div [ HP.class_ $ ClassName c ]
-            [ HH.div [ HP.class_ $ ClassName "label"] [ HH.text l ]
-            , HH.div [ HP.class_ $ ClassName "value"] [ HH.text v ]
-            ]
-        landimg c l v =
-          HH.div [ HP.class_ $ ClassName c ]
-            [ HH.div [ HP.class_ $ ClassName "label"] [ HH.text l ]
-            , HH.div [ HP.class_ $ ClassName "value"] [ HH.img [ HP.src v ] ]
-            ]
         isMe ({ user: ClientUser { id: (UserId id') } }) =
           maybe false (eq id') $ parseUUID state.userId
         me = find isMe state.userStatuses
         others = filter (not $ isMe) state.userStatuses
-        userStatus
-          { fwt
-          , user: (ClientUser { id: userId, name: userName })
-          } =
-            [ landv "user-id" "UserId" $ show userId
-            , landv "user-name" "UserName" $ userName
-            , landimg "face" "Face" $ maybe "" (\(ClientFaceWithTime { face }) -> show face) fwt
-            , landv "time" "Time" $ maybe "" (\(ClientFaceWithTime { time }) -> show time) fwt
-            ]
       in
-        HH.div []
-        [ HH.label []
-          [ HH.span [] [ HH.text "user id" ]
-          , HH.input
-            [ HE.onValueChange (HE.input UpdateUserId)
-            , HP.readOnly (not $ isNothing state.signedInUser)
-            , HP.type_ HP.InputText
-            , HP.value state.userId
+        HH.div [ HP.classes [ ClassName "app" ] ]
+        [ HH.div [ HP.classes [ ClassName "credentials" ] ]
+          [ HH.label []
+            [ HH.span [ HP.classes [ ClassName "label" ] ]
+              [ HH.text "user id" ]
+            , HH.span [ HP.classes [ ClassName "value" ] ]
+              [ HH.input
+                [ HE.onValueChange (HE.input UpdateUserId)
+                , HP.readOnly (not $ isNothing state.signedInUser)
+                , HP.type_ HP.InputText
+                , HP.value state.userId
+                ]
+              ]
             ]
-          ]
-        , HH.label []
-          [ HH.span [] [ HH.text "password" ]
-          , HH.input
-            [ HE.onValueChange (HE.input UpdatePassword)
-            , HP.readOnly (not $ isNothing state.signedInUser)
-            , HP.type_ HP.InputPassword
-            , HP.value state.password
+          , HH.label []
+            [ HH.span [ HP.classes [ ClassName "label" ] ]
+              [ HH.text "password" ]
+            , HH.span [ HP.classes [ ClassName "value" ] ]
+              [ HH.input
+                [ HE.onValueChange (HE.input UpdatePassword)
+                , HP.readOnly (not $ isNothing state.signedInUser)
+                , HP.type_ HP.InputPassword
+                , HP.value state.password
+                ]
+              ]
             ]
+          , if isNothing state.signedInUser
+              then
+                HH.button
+                [ HE.onClick (HE.input_ SignIn) ]
+                [ HH.text "SIGN IN" ]
+              else
+                HH.button
+                [ HE.onClick (HE.input_ SignOut) ]
+                [ HH.text "SIGN OUT" ]
           ]
-        , if isNothing state.signedInUser
-            then
-              HH.button
-              [ HE.onClick (HE.input_ SignIn) ]
-              [ HH.text "SIGN IN" ]
-            else
-              HH.button
-              [ HE.onClick (HE.input_ SignOut) ]
-              [ HH.text "SIGN OUT" ]
         , if isNothing state.signedInUser
             then
               HH.ul [] []
             else
               HH.ul [] $
-              [ HH.li []
+              [ HH.li [] $
                 [ HH.div
                   [ HP.classes [ ClassName "capture" ] ] $
                   [ HH.div [ HP.classes [ ClassName "controls" ] ]
@@ -238,20 +227,43 @@ app =
                     , HP.id_ "canvas"
                     , HP.width 640
                     ]
-                  ] <> (maybe [] userStatus me)
-                ]
-              ] <>
-              ( (\user ->
-                  HH.li []
-                  [ HH.div [ HP.class_ $ ClassName "user-status" ]
-                    (userStatus user)
                   ]
-                ) <$> others
-              )
-        , HH.span []
-          [ if state.loading then HH.text "LOADING..." else HH.text ""
+                ] <> (maybe [] (\m -> [renderUserStatus m]) me)
+              ] <>
+              ((\user -> HH.li [] [renderUserStatus user]) <$> others)
+        , HH.span
+          [ HP.classes
+            ([ ClassName "throbber" ] <>
+              if state.loading
+                then [ ClassName "is-show" ]
+                else []
+            )
           ]
+          []
         ]
+
+    renderUserStatus :: ClientUserStatus -> H.ComponentHTML Query
+    renderUserStatus
+      { fwt
+      , user: (ClientUser { id: userId, name: userName })
+      } =
+      HH.div
+      [ HP.class_ $ ClassName "user-status" ]
+      [ lv "user-id" "UserId" $ HH.text $ show userId
+      , lv "user-name" "UserName" $ HH.text $ userName
+      , lv "face" "Face" $
+        HH.img
+        [ HP.src (maybe "" (\(ClientFaceWithTime { face }) -> show face) fwt)
+        ]
+      , lv "time" "Time" $
+        HH.text (maybe "" (\(ClientFaceWithTime { time }) -> show time) fwt)
+      ]
+      where
+        lv c l v =
+          HH.div [ HP.classes [ ClassName c ] ]
+            [ HH.div [ HP.classes [ ClassName "label" ] ] [ HH.text l ]
+            , HH.div [ HP.classes [ ClassName "value" ] ] [ v ]
+            ]
 
     eval
       :: Query
