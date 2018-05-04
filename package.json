@@ -21,7 +21,8 @@
     "npm-run-all": "^4.1.2",
     "pulp": "^12.0.1",
     "purescript": "^0.11.7",
-    "rimraf": "^2.6.2"
+    "rimraf": "^2.6.2",
+    "watch": "^1.0.2"
   },
   "homepage": "https://github.com/bouzuya/fwt#readme",
   "keywords": [],
@@ -44,6 +45,10 @@
     "start": "node --eval \"require('./output/Server').main();\"",
     "test": "pulp test",
     "watch": "npm-run-all -p 'watch:*'",
-    "watch:server": "pulp --watch build --main Server"
+    "watch:client": "npm-run-all -p 'watch:client:*'",
+    "watch:client:scripts": "pulp --watch browserify --main Client --optimise --to public/scripts/index.js",
+    "watch:client:styles": "watch 'npm run build:client:styles' styles --wait 1",
+    "watch:server": "pulp --watch build --main Server",
+    "watch:start": "watch 'npm start' output --wait 1"
   }
 }
