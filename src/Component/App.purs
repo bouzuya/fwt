@@ -9,7 +9,7 @@ import Control.Applicative (pure, void, (<$>))
 import Control.Bind (bind, (=<<))
 import Control.Monad.Aff (Aff)
 import Control.Monad.Eff.AVar (AVAR)
-import Control.Monad.Eff.Console (CONSOLE, log)
+import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Timer (TIMER, clearTimeout, setTimeout)
 import Control.Monad.Maybe.Trans (MaybeT(..), runMaybeT)
 import Data.Array (filter, find)
@@ -23,7 +23,7 @@ import Data.Semigroup ((<>))
 import Data.StrMap (lookup)
 import Data.Unit (Unit, unit)
 import Graphics.Canvas (CANVAS)
-import Halogen (ClassName(..), SubscribeStatus, lift, liftEff)
+import Halogen (ClassName(..), SubscribeStatus, lift)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -320,7 +320,6 @@ app =
         snapshot'
         pure next
       Tick next -> do
-        liftEff $ log "Tick"
         { isCapturing } <- H.get
         if isCapturing
           then do
