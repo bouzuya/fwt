@@ -145,9 +145,9 @@ app =
     initialState _ =
       { isCapturing: false
       , loading: false
-      , password: "pass1"
+      , password: ""
       , signedInUser: Nothing
-      , userId: "user1"
+      , userId: ""
       , userStatuses: []
       }
 
