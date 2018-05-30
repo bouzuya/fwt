@@ -40,7 +40,7 @@ import Halogen.Query.EventSource as HES
 import Network.HTTP.Affjax as AX
 import Prelude (discard, eq, not, show, ($), (==), (>))
 import Request as Request
-import Size (getSize)
+import Size (getColumns, getSize)
 import Video (MEDIA, VIDEO)
 
 type ClientUserStatus =
@@ -170,8 +170,9 @@ app =
         isMe ({ user: ClientUser { name } }) = name == state.userId
         me = find isMe state.userStatuses
         others = filter (not $ isMe) state.userStatuses
-        size = show $ Math.floor $
-          getSize (Array.length state.userStatuses) state.windowSize
+        wSize = state.windowSize
+        columns = getColumns (Array.length state.userStatuses) wSize
+        size = show $ Math.floor $ getSize columns wSize
       in
         HH.div
         [ HP.classes
