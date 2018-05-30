@@ -12,18 +12,26 @@ import Control.Monad.Eff.AVar (AVAR)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Eff.Timer (TIMER, clearTimeout, setTimeout)
 import Control.Monad.Maybe.Trans (MaybeT(..), runMaybeT)
+import DOM (DOM)
+import DOM.Event.EventTarget (addEventListener, eventListener, removeEventListener)
+import DOM.HTML (window)
+import DOM.HTML.Event.EventTypes as EventType
+import DOM.HTML.Types (windowToEventTarget)
+import DOM.HTML.Window (innerHeight, innerWidth)
 import Data.Array (filter, find)
+import Data.Array as Array
 import Data.ClientFaceWithTime (ClientFaceWithTime(..))
 import Data.ClientUser (ClientUser(..))
 import Data.Foldable (length)
 import Data.Function (const)
+import Data.Int as Math
 import Data.Maybe (Maybe(..), isNothing, maybe)
 import Data.NaturalTransformation (type (~>))
 import Data.Semigroup ((<>))
 import Data.StrMap (lookup)
 import Data.Unit (Unit, unit)
 import Graphics.Canvas (CANVAS)
-import Halogen (ClassName(..), SubscribeStatus, lift)
+import Halogen (AttrName(..), ClassName(..), SubscribeStatus, lift)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -32,6 +40,7 @@ import Halogen.Query.EventSource as HES
 import Network.HTTP.Affjax as AX
 import Prelude (discard, eq, not, show, ($), (==), (>))
 import Request as Request
+import Size (getSize)
 import Video (MEDIA, VIDEO)
 
 type ClientUserStatus =
@@ -46,6 +55,7 @@ type State =
   , signedInUser :: Maybe { password :: String, userId :: String }
   , userId :: String
   , userStatuses :: Array ClientUserStatus
+  , windowSize :: { w :: Int, h :: Int }
   }
 
 data Query a
@@ -55,6 +65,7 @@ data Query a
   | Tick (SubscribeStatus -> a)
   | UpdatePassword String a
   | UpdateUserId String a
+  | WindowResized a
 
 type Message = Unit
 type Input = Unit
@@ -127,6 +138,7 @@ app
         , avar :: AVAR
         , canvas :: CANVAS
         , console :: CONSOLE
+        , dom :: DOM
         , media :: MEDIA
         , timer :: TIMER
         , video :: VIDEO
@@ -149,6 +161,7 @@ app =
       , signedInUser: Nothing
       , userId: ""
       , userStatuses: []
+      , windowSize: { w: 640, h: 480 }
       }
 
     render :: State -> H.ComponentHTML Query
@@ -157,6 +170,8 @@ app =
         isMe ({ user: ClientUser { name } }) = name == state.userId
         me = find isMe state.userStatuses
         others = filter (not $ isMe) state.userStatuses
+        size = show $ Math.floor $
+          getSize (Array.length state.userStatuses) state.windowSize
       in
         HH.div
         [ HP.classes
@@ -206,7 +221,11 @@ app =
               HH.ul [] []
             else
               HH.ul [] $
-              [ HH.li [] $
+              [ HH.li
+                [ HP.attr
+                    (AttrName "style")
+                    ("width: " <> size <> "px; height: " <> size <> "px")
+                ] $
                 [ HH.div
                   [ HP.classes [ ClassName "capture" ] ] $
                   [ HH.div [ HP.classes [ ClassName "controls" ] ]
@@ -222,9 +241,7 @@ app =
                       []
                   , HH.video
                     [ HP.autoplay true
-                    , HP.height 320
                     , HP.id_ "video"
-                    , HP.width 320
                     ] []
                   , HH.canvas
                     [ HP.height 640
@@ -234,7 +251,13 @@ app =
                   ]
                 ] <> (maybe [] (\m -> [renderUserStatus m]) me)
               ] <>
-              ((\user -> HH.li [] [renderUserStatus user]) <$> others)
+              ((\user ->
+                HH.li
+                [ HP.attr
+                    (AttrName "style")
+                    ("width: " <> size <> "px; height: " <> size <> "px")
+                ] $ [renderUserStatus user]) <$> others
+              )
         , HH.span
           [ HP.classes
             ([ ClassName "throbber" ] <>
@@ -280,6 +303,7 @@ app =
             , avar :: AVAR
             , canvas :: CANVAS
             , console :: CONSOLE
+            , dom :: DOM
             , media :: MEDIA
             , timer :: TIMER
             , video :: VIDEO
@@ -288,6 +312,12 @@ app =
           )
     eval = case _ of
       SignIn next -> do
+        -- resize
+        w <- H.liftEff window
+        width <- H.liftEff $ innerWidth w
+        height <- H.liftEff $ innerHeight w
+        H.modify (\s -> s { windowSize = { w: width, h: height } })
+        -- sign in
         { password, userId } <- H.get
         H.modify (_ { loading = true })
         usersMaybe <- lift $ Request.getUsers { password, userId }
@@ -311,6 +341,25 @@ app =
                   pure $ void $ clearTimeout id
                 )
                 (H.request Tick)
+            H.subscribe $
+              HES.eventSource'
+                (\f -> do
+                  w <- window
+                  let listener = eventListener f
+                  _ <-
+                    addEventListener
+                      EventType.resize
+                      listener
+                      false
+                      (windowToEventTarget w)
+                  pure $
+                    removeEventListener
+                      EventType.resize
+                      listener
+                      false
+                      (windowToEventTarget w)
+                )
+                (\e -> pure $ WindowResized HES.Listening)
             pure next
       SignOut next -> do
         _ <- H.liftEff $ stop
@@ -338,4 +387,10 @@ app =
         pure next
       UpdateUserId userId next -> do
         H.modify (\s -> s { userId = userId })
+        pure next
+      WindowResized next -> do
+        w <- H.liftEff window
+        width <- H.liftEff $ innerWidth w
+        height <- H.liftEff $ innerHeight w
+        H.modify (\s -> s { windowSize = { w: width, h: height } })
         pure next
