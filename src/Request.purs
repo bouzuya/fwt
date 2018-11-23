@@ -4,8 +4,6 @@ module Request
   , getUsers
   ) where
 
-import Data.Semigroup ((<>))
-
 import Control.Bind (bind, pure)
 import Control.Monad.Aff (Aff)
 import Control.Monad.Aff.Class (liftAff)
@@ -13,9 +11,10 @@ import Control.Monad.Maybe.Trans (MaybeT(..), runMaybeT)
 import Data.Argonaut (decodeJson)
 import Data.ClientFaceWithTime (ClientFaceWithTime)
 import Data.ClientUser (ClientUser)
-import Data.Either (either)
+import Data.Either (either, hush)
 import Data.Function (const, ($))
 import Data.Maybe (Maybe(..))
+import Data.Semigroup ((<>))
 import Data.StrMap (StrMap)
 import Data.Tuple (Tuple(..))
 import Data.URL (URL(..), parseUrlWithQuery)
@@ -35,7 +34,7 @@ createFace { password, userId } face = runMaybeT do
       ]
   (URL url) <- MaybeT $ pure $ parseUrlWithQuery "/faces" params
   response <- liftAff $ AX.post url ("{\"face\":\"" <> face <> "\"}")
-  MaybeT $ pure $ either (const Nothing) Just (decodeJson response.response)
+  MaybeT $ pure $ hush (decodeJson response.response)
 
 getFaces
   :: forall e
@@ -50,7 +49,7 @@ getFaces { password, secret, userId } = runMaybeT do
       ]
   (URL url) <- MaybeT $ pure $ parseUrlWithQuery "/faces" params
   response <- liftAff $ AX.get url
-  MaybeT $ pure $ either (const Nothing) Just $ decodeJson response.response
+  MaybeT $ pure $ hush $ decodeJson response.response
 
 getUsers
   :: forall e
@@ -64,4 +63,4 @@ getUsers { password, userId } = runMaybeT do
       ]
   (URL url) <- MaybeT $ pure $ parseUrlWithQuery "/users" params
   response <- liftAff $ AX.get url
-  MaybeT $ pure $ either (const Nothing) Just $ decodeJson response.response
+  MaybeT $ pure $ hush $ decodeJson response.response

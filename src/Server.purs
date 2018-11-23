@@ -14,7 +14,7 @@ import Control.Monad.Eff.Ref (REF, Ref, newRef)
 import Control.Monad.Maybe.Trans (MaybeT(..), runMaybeT)
 import Control.Monad.Trans.Class (lift)
 import Data.Argonaut (decodeJson, jsonParser)
-import Data.Either (either)
+import Data.Either (either, hush)
 import Data.Formatter.Parser.Number (parseInteger)
 import Data.Function (const, id, ($))
 import Data.Functor ((<$>))
@@ -69,7 +69,7 @@ getRequestData' = getRequestData :>>= \request -> Tuple request <$> readBody
 
 actionWithBody :: (Tuple RequestData RequestBody) -> Maybe ActionWithBody
 actionWithBody (Tuple request body) = do
-  method <- either Just (const Nothing) request.method
+  method <- either Just (const Nothing) request.method -- Use left value
   let parsedUrl = parseUrl request.url
   path <- pure $ parsedUrl.path
   query <- pure $ either (const []) id $ parsedUrl.query
@@ -120,7 +120,7 @@ parseUsers json = do
   pure usersRecord
   where
     maps :: String -> Maybe (Array (StrMap String))
-    maps s = either (const Nothing) Just $ decodeJson =<< jsonParser s
+    maps s = hush (decodeJson =<< jsonParser s)
     mapToRecord :: StrMap String -> Maybe { name :: String, password :: String }
     mapToRecord map = do
       name <- StrMap.lookup "name" map
@@ -168,7 +168,7 @@ main = do
   let
     portInt = fromMaybe 3000 do
       portString <- portStringMaybe
-      either (const Nothing) Just (runParser portString parseInteger)
+      hush (runParser portString parseInteger)
   ref <- newRef { users }
   let components = { ref }
   currentDirectory <- cwd
