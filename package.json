@@ -11,16 +11,16 @@
     "url": "https://github.com/bouzuya/fwt/issues"
   },
   "dependencies": {
-    "uuid": "^3.2.1",
+    "uuid": "^3.3.2",
     "uuid-validate": "0.0.2",
     "xhr2": "^0.1.4"
   },
   "devDependencies": {
     "bower": "^1.8.4",
-    "less": "^3.0.2",
-    "nodemon": "^1.17.3",
-    "npm-run-all": "^4.1.2",
-    "pulp": "^12.0.1",
+    "less": "^3.8.1",
+    "nodemon": "^1.18.6",
+    "npm-run-all": "^4.1.3",
+    "pulp": "^12.3.0",
     "purescript": "^0.11.7",
     "rimraf": "^2.6.2",
     "watch": "^1.0.2"
